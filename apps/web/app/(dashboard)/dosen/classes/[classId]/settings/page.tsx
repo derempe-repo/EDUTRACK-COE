@@ -110,6 +110,29 @@ export default async function DosenClassSettingsPage({
                   <option value="archived">Archived</option>
                 </select>
               </label>
+              <div className="rounded-lg border border-teal-100 bg-teal-50 p-4">
+                <p className="text-sm font-semibold text-teal-950">Bobot nilai akhir</p>
+                <p className="mt-1 text-xs leading-5 text-teal-800">
+                  Nilai akhir dihitung dari rata-rata setiap kategori. Total bobot wajib tepat 100%.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <NumberField
+                    defaultValue={data.classItem.assignmentWeight.toString()}
+                    label="Tugas (%)"
+                    name="assignmentWeight"
+                  />
+                  <NumberField
+                    defaultValue={data.classItem.quizWeight.toString()}
+                    label="Kuis (%)"
+                    name="quizWeight"
+                  />
+                  <NumberField
+                    defaultValue={data.classItem.finalExamWeight.toString()}
+                    label="Final exam (%)"
+                    name="finalExamWeight"
+                  />
+                </div>
+              </div>
               <button
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b] sm:w-auto"
                 type="submit"
@@ -183,6 +206,31 @@ function TextArea({
         className="min-h-28 w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
         defaultValue={defaultValue}
         name={name}
+      />
+    </label>
+  );
+}
+
+function NumberField({
+  defaultValue,
+  label,
+  name,
+}: {
+  defaultValue: string;
+  label: string;
+  name: string;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-teal-900">{label}</span>
+      <input
+        className="w-full rounded-md border border-teal-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+        defaultValue={defaultValue}
+        max="100"
+        min="0"
+        name={name}
+        required
+        type="number"
       />
     </label>
   );

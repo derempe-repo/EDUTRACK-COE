@@ -137,6 +137,9 @@ export const classes = pgTable(
     title: text("title").notNull(),
     description: text("description"),
     status: classStatus("status").notNull().default("draft"),
+    assignmentWeight: integer("assignment_weight").notNull().default(30),
+    quizWeight: integer("quiz_weight").notNull().default(30),
+    finalExamWeight: integer("final_exam_weight").notNull().default(40),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => profiles.id, { onDelete: "restrict" }),
@@ -308,6 +311,7 @@ export const submissions = pgTable(
     score: integer("score"),
     feedback: text("feedback"),
     plagiarismStatus: plagiarismStatus("plagiarism_status").notNull().default("pending"),
+    submissionText: text("submission_text"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
     reviewedBy: uuid("reviewed_by").references(() => profiles.id, { onDelete: "set null" }),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
@@ -320,6 +324,79 @@ export const submissions = pgTable(
     index("submissions_student_id_idx").on(table.studentId),
     index("submissions_status_idx").on(table.status),
     index("submissions_reviewed_by_idx").on(table.reviewedBy),
+  ],
+);
+
+export const plagiarismChecks = pgTable(
+  "plagiarism_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    status: plagiarismStatus("status").notNull().default("pending"),
+    similarityScore: integer("similarity_score").notNull().default(0),
+    thresholdPercent: integer("threshold_percent").notNull().default(70),
+    extractionStatus: text("extraction_status").notNull().default("pending"),
+    extractionError: text("extraction_error"),
+    checkedAt: timestamp("checked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("plagiarism_checks_submission_id_unique").on(table.submissionId),
+    index("plagiarism_checks_status_idx").on(table.status),
+    index("plagiarism_checks_similarity_score_idx").on(table.similarityScore),
+    index("plagiarism_checks_checked_at_idx").on(table.checkedAt),
+  ],
+);
+
+export const plagiarismMatches = pgTable(
+  "plagiarism_matches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    checkId: uuid("check_id")
+      .notNull()
+      .references(() => plagiarismChecks.id, { onDelete: "cascade" }),
+    matchedSubmissionId: uuid("matched_submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    similarityScore: integer("similarity_score").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("plagiarism_matches_check_submission_unique").on(
+      table.checkId,
+      table.matchedSubmissionId,
+    ),
+    index("plagiarism_matches_check_id_idx").on(table.checkId),
+    index("plagiarism_matches_matched_submission_id_idx").on(table.matchedSubmissionId),
+    index("plagiarism_matches_similarity_score_idx").on(table.similarityScore),
+  ],
+);
+
+export const plagiarismOverrides = pgTable(
+  "plagiarism_overrides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    checkId: uuid("check_id")
+      .notNull()
+      .references(() => plagiarismChecks.id, { onDelete: "cascade" }),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    action: text("action").notNull(),
+    reason: text("reason").notNull(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("plagiarism_overrides_check_id_idx").on(table.checkId),
+    index("plagiarism_overrides_submission_id_idx").on(table.submissionId),
+    index("plagiarism_overrides_actor_id_idx").on(table.actorId),
+    index("plagiarism_overrides_created_at_idx").on(table.createdAt),
   ],
 );
 
@@ -439,7 +516,7 @@ export const quizAttemptQuestions = pgTable(
       .references(() => quizAttempts.id, { onDelete: "cascade" }),
     questionId: uuid("question_id")
       .notNull()
-      .references(() => questions.id, { onDelete: "restrict" }),
+      .references(() => questions.id, { onDelete: "cascade" }),
     questionText: text("question_text").notNull(),
     weight: integer("weight").notNull().default(1),
     sortOrder: integer("sort_order").notNull().default(0),

@@ -24,6 +24,7 @@ import {
 } from "@/db/schema";
 import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
 import { getDosenModuleQuizzesPath, getMahasiswaClassPath } from "@/features/classes/urls";
+import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { canStudentAccessQuiz, canSubmitQuizAttempt, isQuestionUsableForQuiz } from "@/features/quizzes/access";
 import { calculateQuizScore } from "@/features/quizzes/grading";
 import {
@@ -324,6 +325,19 @@ async function requireStudentQuizContext(quizId: string, studentId: string) {
     })
   ) {
     redirect("/mahasiswa/dashboard?error=quiz_not_found");
+  }
+
+  if (
+    await hasPriorFlaggedSubmission({
+      classId: context.classId,
+      moduleId: context.moduleId,
+      studentId,
+    })
+  ) {
+    redirect(
+      getMahasiswaClassPath({ id: context.classId, title: context.classTitle }) +
+        "?error=plagiarism_module_locked",
+    );
   }
 
   return context;

@@ -157,6 +157,16 @@ const successMessages: Record<string, FeedbackNotice> = {
     message: "Mahasiswa sudah bisa mengumpulkan ulang submission.",
     tone: "success",
   },
+  plagiarism_resubmit_allowed: {
+    title: "Resubmit plagiarism dibuka",
+    message: "Mahasiswa dapat memperbaiki dan mengunggah ulang submission. Riwayat override sudah dicatat.",
+    tone: "success",
+  },
+  plagiarism_rejected: {
+    title: "Submission ditolak permanen",
+    message: "Nilai submission menjadi 0 dan riwayat override sudah dicatat.",
+    tone: "success",
+  },
 };
 
 const errorMessages: Record<string, FeedbackNotice> = {
@@ -165,9 +175,14 @@ const errorMessages: Record<string, FeedbackNotice> = {
     message: "Kelas yang diminta tidak tersedia atau bukan milik akun ini.",
     tone: "danger",
   },
+  class_delete_failed: {
+    title: "Kelas belum bisa dihapus",
+    message: "Data kelas belum berhasil dihapus. Muat ulang halaman lalu coba lagi.",
+    tone: "danger",
+  },
   invalid_class: {
     title: "Data kelas belum valid",
-    message: "Periksa nama, deskripsi, dan status kelas sebelum menyimpan.",
+    message: "Periksa nama, deskripsi, status kelas, dan pastikan total bobot nilai tepat 100%.",
     tone: "danger",
   },
   certificate_not_ready: {
@@ -369,6 +384,26 @@ const errorMessages: Record<string, FeedbackNotice> = {
     title: "Upload submission gagal",
     message: "File belum berhasil diunggah. Coba ulangi dengan file yang sama atau lebih kecil.",
     tone: "danger",
+  },
+  invalid_plagiarism_override: {
+    title: "Override belum valid",
+    message: "Tuliskan alasan override minimal 10 karakter sebelum menyimpan keputusan.",
+    tone: "danger",
+  },
+  plagiarism_check_not_found: {
+    title: "Hasil cek tidak ditemukan",
+    message: "Hasil plagiarism tidak tersedia atau Anda tidak memiliki akses untuk mengubahnya.",
+    tone: "danger",
+  },
+  plagiarism_module_locked: {
+    title: "Modul terkunci sementara",
+    message: "Submission pada modul sebelumnya perlu ditinjau dosen sebelum Anda dapat melanjutkan.",
+    tone: "warning",
+  },
+  plagiarism_override_required: {
+    title: "Gunakan override plagiarism",
+    message: "Submission yang ditandai similarity harus diproses melalui Izinkan Ulang Upload atau Tolak Permanen.",
+    tone: "warning",
   },
   step_not_found: {
     title: "Step tidak ditemukan",

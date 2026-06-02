@@ -31,6 +31,8 @@ import {
   getMahasiswaClassPath,
 } from "@/features/classes/urls";
 import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
+import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
+import { runPlagiarismCheck } from "@/features/plagiarism/service";
 import { writeAuditLog } from "@/lib/audit";
 import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -115,6 +117,7 @@ async function requireOwnedSubmission(submissionId: string, lecturerId: string) 
       maxScore: assignments.maxScore,
       moduleId: modules.id,
       moduleTitle: modules.title,
+      plagiarismStatus: submissions.plagiarismStatus,
       status: submissions.status,
       stepId: moduleSteps.id,
       studentId: submissions.studentId,
@@ -199,6 +202,19 @@ async function requireSubmittableAssignment(assignmentId: string, studentId: str
     redirect("/mahasiswa/dashboard?error=assignment_not_found");
   }
 
+  if (
+    await hasPriorFlaggedSubmission({
+      classId: rows[0].classId,
+      moduleId: rows[0].moduleId,
+      studentId,
+    })
+  ) {
+    redirect(
+      getMahasiswaClassPath({ id: rows[0].classId, title: rows[0].classTitle }) +
+        "?error=plagiarism_module_locked",
+    );
+  }
+
   return rows[0];
 }
 
@@ -212,7 +228,7 @@ async function upsertProgress({
 }: {
   classId: string;
   score: number | null;
-  status: "failed" | "locked" | "not_started" | "submitted" | "verified";
+  status: "failed" | "in_progress" | "locked" | "not_started" | "submitted" | "verified";
   stepId: string;
   studentId: string;
   submissionId: string;
@@ -675,10 +691,31 @@ export async function submitAssignmentAction(formData: FormData) {
     await supabase.storage.from(SUBMISSIONS_BUCKET).remove([existingSubmission.filePath]);
   }
 
+  let plagiarismResult: Awaited<ReturnType<typeof runPlagiarismCheck>> | null = null;
+
+  try {
+    plagiarismResult = await runPlagiarismCheck({
+      assignmentId: parsed.data.assignmentId,
+      assignmentTitle: assignment.assignmentTitle,
+      file,
+      lecturerId: assignment.lecturerId,
+      note: parsed.data.note,
+      studentId: profile.id,
+      studentName: profile.name,
+      submissionId: submission.id,
+    });
+  } catch (error) {
+    console.error("Failed to run plagiarism check", {
+      assignmentId: parsed.data.assignmentId,
+      error,
+      submissionId: submission.id,
+    });
+  }
+
   await upsertProgress({
     classId: assignment.classId,
     score: null,
-    status: progressStatusFromSubmission("submitted"),
+    status: progressStatusFromSubmission(plagiarismResult?.status === "flagged" ? "locked" : "submitted"),
     stepId: assignment.stepId,
     studentId: profile.id,
     submissionId: submission.id,
@@ -702,8 +739,25 @@ export async function submitAssignmentAction(formData: FormData) {
       assignment_id: parsed.data.assignmentId,
       class_id: assignment.classId,
       storage_path: storagePath,
+      plagiarism_status: plagiarismResult?.status ?? "pending",
+      similarity_score: plagiarismResult?.similarityScore ?? null,
     },
   });
+
+  if (plagiarismResult?.status === "flagged") {
+    await writeAuditLog({
+      action: "plagiarism.flagged",
+      entityId: plagiarismResult.checkId,
+      entityType: "plagiarism_checks",
+      metadata: {
+        assignment_id: parsed.data.assignmentId,
+        class_id: assignment.classId,
+        similarity_score: plagiarismResult.similarityScore,
+        submission_id: submission.id,
+        threshold_percent: plagiarismResult.thresholdPercent,
+      },
+    });
+  }
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(`/mahasiswa/classes/${assignment.classId}`);
@@ -731,6 +785,17 @@ export async function reviewSubmissionAction(formData: FormData) {
   }
 
   const submission = await requireOwnedSubmission(parsed.data.submissionId, profile.id);
+  if (
+    submission.plagiarismStatus === "flagged" ||
+    submission.plagiarismStatus === "rejected_permanent"
+  ) {
+    redirect(
+      getDosenModuleAssignmentsPath(
+        { id: submission.classId, title: submission.classTitle },
+        { id: submission.moduleId, title: submission.moduleTitle },
+      ) + "?error=plagiarism_override_required",
+    );
+  }
   const score = parsed.data.status === "accepted" ? (parsed.data.score ?? submission.maxScore) : null;
 
   if (score !== null && score > submission.maxScore) {
@@ -811,6 +876,14 @@ export async function allowResubmitAction(formData: FormData) {
   }
 
   const submission = await requireOwnedSubmission(parsed.data.submissionId, profile.id);
+  if (submission.plagiarismStatus === "flagged") {
+    redirect(
+      getDosenModuleAssignmentsPath(
+        { id: submission.classId, title: submission.classTitle },
+        { id: submission.moduleId, title: submission.moduleTitle },
+      ) + "?error=plagiarism_override_required",
+    );
+  }
   const now = new Date();
 
   await db

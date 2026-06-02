@@ -134,7 +134,7 @@ export default async function DosenClassMembersPage({
                       <tr>
                         <th className="px-4 py-3">Mahasiswa</th>
                         <th className="px-4 py-3">Progres</th>
-                        <th className="px-4 py-3">Nilai</th>
+                        <th className="px-4 py-3">Nilai akhir</th>
                         <th className="px-4 py-3">Sertifikat</th>
                         <th className="px-4 py-3 text-right">Aksi</th>
                       </tr>

@@ -20,12 +20,16 @@ import { z } from "@/lib/validators";
 async function buildExcelReport(report: NonNullable<Awaited<ReturnType<typeof getClassReportData>>>) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Laporan Kelas");
+  const infoWorksheet = workbook.addWorksheet("Informasi");
 
   worksheet.columns = [
     { header: "No", key: "number", width: 6 },
     { header: "Nama", key: "name", width: 28 },
     { header: "Email", key: "email", width: 34 },
     { header: "Progress (%)", key: "progressPercent", width: 15 },
+    { header: "Rata-rata Tugas", key: "assignmentAverage", width: 18 },
+    { header: "Rata-rata Kuis", key: "quizAverage", width: 17 },
+    { header: "Rata-rata Final Exam", key: "finalExamAverage", width: 21 },
     { header: "Nilai Akhir", key: "finalScore", width: 14 },
     { header: "Status Sertifikat", key: "certificateStatus", width: 20 },
     { header: "Nomor Sertifikat", key: "certificateNumber", width: 28 },
@@ -45,6 +49,23 @@ async function buildExcelReport(report: NonNullable<Awaited<ReturnType<typeof ge
     type: "pattern",
   };
   worksheet.views = [{ state: "frozen", ySplit: 1 }];
+  infoWorksheet.columns = [
+    { header: "Informasi", key: "label", width: 24 },
+    { header: "Nilai", key: "value", width: 36 },
+  ];
+  infoWorksheet.addRows([
+    { label: "Nama kelas", value: report.classItem.title },
+    { label: "Bobot tugas", value: `${report.classItem.assignmentWeight}%` },
+    { label: "Bobot kuis", value: `${report.classItem.quizWeight}%` },
+    { label: "Bobot final exam", value: `${report.classItem.finalExamWeight}%` },
+    { label: "Catatan", value: "Nilai akhir adalah gabungan rata-rata tiap kategori sesuai bobot." },
+  ]);
+  infoWorksheet.getRow(1).font = { bold: true, color: { argb: "FF134E4A" } };
+  infoWorksheet.getRow(1).fill = {
+    fgColor: { argb: "FFCCFBF1" },
+    pattern: "solid",
+    type: "pattern",
+  };
 
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
@@ -111,6 +132,7 @@ export async function generateClassExportAction(formData: FormData) {
             <ClassReportDocument
               classTitle={report.classItem.title}
               generatedAt={report.generatedAt}
+              gradeWeights={report.classItem}
               students={report.students}
             />,
           );

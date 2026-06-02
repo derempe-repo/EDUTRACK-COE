@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 import {
   assignments,
   certificates,
+  classes,
   grades,
   moduleSteps,
   modules,
@@ -22,16 +23,9 @@ import {
   CERTIFICATES_BUCKET,
 } from "@/features/certificates/storage";
 import { getMahasiswaClassDetail } from "@/features/classes/data";
+import { calculateWeightedClassScore } from "@/features/grades/class-score";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
-
-function averageScore(scores: number[]) {
-  if (scores.length === 0) {
-    return 0;
-  }
-
-  return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-}
 
 function createCertificateNumber(certificateId: string, issuedAt: Date) {
   return `LMS-${issuedAt.getFullYear()}-${certificateId.slice(0, 8).toUpperCase()}`;
@@ -52,9 +46,19 @@ export async function issueEligibleCertificate(
     return { issued: false, reason: "class_not_found" } as const;
   }
 
-  const [gradeRows, plagiarismRows, studentRows] = await Promise.all([
+  const [classRows, gradeRows, plagiarismRows, acceptedSubmissionRows, studentRows] = await Promise.all([
     db
       .select({
+        assignmentWeight: classes.assignmentWeight,
+        finalExamWeight: classes.finalExamWeight,
+        quizWeight: classes.quizWeight,
+      })
+      .from(classes)
+      .where(eq(classes.id, classId))
+      .limit(1),
+    db
+      .select({
+        maxScore: grades.maxScore,
         score: grades.score,
         sourceType: grades.sourceType,
       })
@@ -71,23 +75,49 @@ export async function issueEligibleCertificate(
       .where(and(eq(modules.classId, classId), eq(submissions.studentId, studentId))),
     db
       .select({
+        maxScore: assignments.maxScore,
+        score: submissions.score,
+      })
+      .from(submissions)
+      .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
+      .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
+      .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
+      .where(
+        and(
+          eq(modules.classId, classId),
+          eq(submissions.studentId, studentId),
+          eq(submissions.status, "accepted"),
+        ),
+      ),
+    db
+      .select({
         name: profiles.name,
       })
       .from(profiles)
       .where(eq(profiles.id, studentId))
       .limit(1),
   ]);
+  const classItem = classRows[0] ?? null;
   const student = studentRows[0] ?? null;
 
-  if (!student) {
+  if (!classItem || !student) {
     return { issued: false, reason: "student_not_found" } as const;
   }
-  const finalExamScores = gradeRows
-    .filter((grade) => grade.sourceType === "final_exam")
-    .map((grade) => grade.score);
-  const finalScore = averageScore(
-    finalExamScores.length > 0 ? finalExamScores : gradeRows.map((grade) => grade.score),
-  );
+  const score = calculateWeightedClassScore({
+    assignmentScores: acceptedSubmissionRows
+      .filter((submission) => submission.score !== null)
+      .map((submission) => ({ maxScore: submission.maxScore, score: Number(submission.score) })),
+    assignmentWeight: classItem.assignmentWeight,
+    finalExamScores: gradeRows
+      .filter((grade) => grade.sourceType === "final_exam")
+      .map((grade) => ({ maxScore: grade.maxScore, score: grade.score })),
+    finalExamWeight: classItem.finalExamWeight,
+    quizScores: gradeRows
+      .filter((grade) => grade.sourceType === "quiz")
+      .map((grade) => ({ maxScore: grade.maxScore, score: grade.score })),
+    quizWeight: classItem.quizWeight,
+  });
+  const finalScore = score.finalScore;
   const rule = evaluateCertificateRule({
     finalScore,
     hasRejectedPermanentSubmission: plagiarismRows.some(
@@ -98,6 +128,8 @@ export async function issueEligibleCertificate(
   const now = new Date();
   const metadata = {
     checks: rule.checks,
+    gradeBreakdown: score,
+    gradeWeights: classItem,
     finalScore,
     modules: data.modules.map((moduleItem) => ({
       id: moduleItem.id,

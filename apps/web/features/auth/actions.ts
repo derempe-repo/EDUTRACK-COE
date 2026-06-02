@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentProfile, getDashboardPathForRole } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
+import { getRegistrationsEnabled } from "@/features/admin/data";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "@/lib/validators";
 
@@ -26,6 +27,10 @@ const registerSchema = z
   });
 
 export async function registerMahasiswaAction(formData: FormData) {
+  if (!(await getRegistrationsEnabled())) {
+    redirect("/register?error=registration_disabled");
+  }
+
   const parsed = registerSchema.safeParse({
     confirmPassword: formData.get("confirmPassword"),
     email: formData.get("email"),

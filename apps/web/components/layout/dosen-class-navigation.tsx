@@ -1,12 +1,13 @@
 "use client";
 
-import { BarChart3, BookOpen, Settings, Users } from "lucide-react";
+import { BarChart3, BookOpen, Settings, ShieldAlert, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
   getDosenClassMembersPath,
   getDosenClassPath,
+  getDosenClassPlagiarismPath,
   getDosenClassReportsPath,
   getDosenClassSettingsPath,
 } from "@/features/classes/urls";
@@ -36,6 +37,11 @@ export function DosenClassNavigation({ classItem }: DosenClassNavigationProps) {
       href: getDosenClassReportsPath(classItem),
       icon: BarChart3,
       label: "Laporan",
+    },
+    {
+      href: getDosenClassPlagiarismPath(classItem),
+      icon: ShieldAlert,
+      label: "Plagiasi",
     },
     {
       href: getDosenClassSettingsPath(classItem),

@@ -29,6 +29,7 @@ const allowedExtensions = new Set([
   ".jsx",
   ".html",
   ".css",
+  ".json",
 ]);
 
 export function sanitizeSubmissionFileName(fileName: string) {

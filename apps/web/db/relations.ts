@@ -15,6 +15,9 @@ import {
   moduleSteps,
   modules,
   notifications,
+  plagiarismChecks,
+  plagiarismMatches,
+  plagiarismOverrides,
   profiles,
   questionOptions,
   questions,
@@ -34,6 +37,7 @@ export const profileRelations = relations(profiles, ({ many }) => ({
   materialReads: many(materialReads),
   createdAssignments: many(assignments),
   submissions: many(submissions),
+  plagiarismOverrides: many(plagiarismOverrides),
   progress: many(moduleProgress),
   notifications: many(notifications),
   createdQuizzes: many(quizzes),
@@ -237,6 +241,44 @@ export const submissionRelations = relations(submissions, ({ one, many }) => ({
     references: [profiles.id],
   }),
   progress: many(moduleProgress),
+  plagiarismCheck: one(plagiarismChecks),
+  plagiarismMatches: many(plagiarismMatches),
+  plagiarismOverrides: many(plagiarismOverrides),
+}));
+
+export const plagiarismCheckRelations = relations(plagiarismChecks, ({ one, many }) => ({
+  submission: one(submissions, {
+    fields: [plagiarismChecks.submissionId],
+    references: [submissions.id],
+  }),
+  matches: many(plagiarismMatches),
+  overrides: many(plagiarismOverrides),
+}));
+
+export const plagiarismMatchRelations = relations(plagiarismMatches, ({ one }) => ({
+  check: one(plagiarismChecks, {
+    fields: [plagiarismMatches.checkId],
+    references: [plagiarismChecks.id],
+  }),
+  matchedSubmission: one(submissions, {
+    fields: [plagiarismMatches.matchedSubmissionId],
+    references: [submissions.id],
+  }),
+}));
+
+export const plagiarismOverrideRelations = relations(plagiarismOverrides, ({ one }) => ({
+  actor: one(profiles, {
+    fields: [plagiarismOverrides.actorId],
+    references: [profiles.id],
+  }),
+  check: one(plagiarismChecks, {
+    fields: [plagiarismOverrides.checkId],
+    references: [plagiarismChecks.id],
+  }),
+  submission: one(submissions, {
+    fields: [plagiarismOverrides.submissionId],
+    references: [submissions.id],
+  }),
 }));
 
 export const moduleProgressRelations = relations(moduleProgress, ({ one }) => ({

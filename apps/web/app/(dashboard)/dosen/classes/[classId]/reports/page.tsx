@@ -115,6 +115,13 @@ export default async function DosenClassReportsPage({
               </div>
             </div>
             <div className="p-4 sm:p-5">
+              <div className="mb-4 rounded-md border border-teal-100 bg-teal-50 p-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Bobot nilai aktif</p>
+                <p className="mt-1 text-sm font-semibold text-teal-950">
+                  Tugas {data.classItem.assignmentWeight}% · Kuis {data.classItem.quizWeight}% ·
+                  Final Exam {data.classItem.finalExamWeight}%
+                </p>
+              </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <form action={generateClassExportAction}>
                   <input name="classId" type="hidden" value={data.classItem.id} />

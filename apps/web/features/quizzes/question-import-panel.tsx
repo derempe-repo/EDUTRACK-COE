@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileSpreadsheet, LoaderCircle, RotateCcw, Upload } from "lucide-react";
+import { ChevronDown, Download, FileSpreadsheet, LoaderCircle, RotateCcw, Upload } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 
 import { importQuestionsAction } from "@/features/quizzes/actions";
@@ -69,14 +69,17 @@ export function QuestionImportPanel({ stepId }: { stepId: string }) {
   }
 
   return (
-    <details className="rounded-lg border border-teal-200 bg-teal-50">
+    <details className="group rounded-lg border border-teal-200 bg-teal-50">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-teal-950 [&::-webkit-details-marker]:hidden">
         <span className="inline-flex min-w-0 items-center gap-2">
           <FileSpreadsheet className="size-4 shrink-0 text-teal-700" />
           Import soal dari Excel
         </span>
-        <span className="rounded-md border border-teal-200 bg-white px-2 py-1 text-xs text-teal-700">
-          Maks. 200 soal
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="rounded-md border border-teal-200 bg-white px-2 py-1 text-xs text-teal-700">
+            Maks. 200 soal
+          </span>
+          <ChevronDown className="size-4 text-teal-700 transition group-open:rotate-180" />
         </span>
       </summary>
 

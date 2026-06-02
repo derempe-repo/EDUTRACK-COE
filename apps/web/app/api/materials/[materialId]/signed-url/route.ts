@@ -7,6 +7,7 @@ import {
   buildMaterialDownloadFileName,
   MATERIALS_BUCKET,
 } from "@/features/classes/material-storage";
+import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { getCurrentProfile } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
@@ -35,6 +36,7 @@ export async function GET(_request: Request, context: SignedUrlRouteContext) {
       classOwnerId: classes.createdBy,
       classStatus: classes.status,
       moduleIsLocked: modules.isLocked,
+      moduleId: modules.id,
     })
     .from(materials)
     .innerJoin(moduleSteps, eq(moduleSteps.id, materials.moduleStepId))
@@ -73,6 +75,17 @@ export async function GET(_request: Request, context: SignedUrlRouteContext) {
 
   if (!canAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (
+    profile.role === "mahasiswa" &&
+    (await hasPriorFlaggedSubmission({
+      classId: material.classId,
+      moduleId: material.moduleId,
+      studentId: profile.id,
+    }))
+  ) {
+    return NextResponse.json({ error: "Temporarily locked by plagiarism review" }, { status: 403 });
   }
 
   if (!material.storagePath) {

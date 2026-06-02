@@ -3,13 +3,21 @@ import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 type ClassReportDocumentProps = {
   classTitle: string;
   generatedAt: Date;
+  gradeWeights: {
+    assignmentWeight: number;
+    finalExamWeight: number;
+    quizWeight: number;
+  };
   students: Array<{
     certificateNumber: string;
     certificateStatus: string;
     email: string;
+    assignmentAverage: number;
+    finalExamAverage: number;
     finalScore: number;
     name: string;
     progressPercent: number;
+    quizAverage: number;
   }>;
 };
 
@@ -79,20 +87,24 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   index: {
-    width: "5%",
+    width: "4%",
   },
   identity: {
-    width: "25%",
+    width: "15%",
   },
   email: {
-    width: "24%",
+    width: "19%",
   },
   metric: {
     textAlign: "center",
-    width: "11%",
+    width: "8%",
+  },
+  finalMetric: {
+    textAlign: "center",
+    width: "9%",
   },
   certificate: {
-    width: "24%",
+    width: "21%",
   },
   footer: {
     bottom: 14,
@@ -109,52 +121,71 @@ const styles = StyleSheet.create({
 export function ClassReportDocument({
   classTitle,
   generatedAt,
+  gradeWeights,
   students,
 }: ClassReportDocumentProps) {
+  const studentsPerPage = 14;
+  const studentPages =
+    students.length > 0
+      ? Array.from({ length: Math.ceil(students.length / studentsPerPage) }, (_, index) =>
+          students.slice(index * studentsPerPage, (index + 1) * studentsPerPage),
+        )
+      : [[]];
+
   return (
     <Document>
-      <Page orientation="landscape" size="A4" style={styles.page}>
-        <View style={styles.topBar} fixed>
-          <View>
-            <Text style={styles.brand}>EDUTRACK COE</Text>
-            <Text style={styles.brandCaption}>CENTER OF EXCELLENCE DIGITAL LEARNING</Text>
-          </View>
-          <Text style={styles.reportLabel}>LAPORAN KELAS</Text>
-        </View>
-        <Text style={styles.title}>Laporan Kelas - {classTitle}</Text>
-        <Text style={styles.subtitle}>
-          Dibuat pada {new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(generatedAt)}
-        </Text>
-
-        <View style={styles.table}>
-          <View style={[styles.row, styles.header]}>
-            <Text style={[styles.cell, styles.index]}>No</Text>
-            <Text style={[styles.cell, styles.identity]}>Nama</Text>
-            <Text style={[styles.cell, styles.email]}>Email</Text>
-            <Text style={[styles.cell, styles.metric]}>Progress</Text>
-            <Text style={[styles.cell, styles.metric]}>Nilai</Text>
-            <Text style={[styles.cell, styles.certificate]}>Sertifikat</Text>
-          </View>
-          {students.map((student, index) => (
-            <View key={student.email} style={styles.row}>
-              <Text style={[styles.cell, styles.index]}>{index + 1}</Text>
-              <Text style={[styles.cell, styles.identity]}>{student.name}</Text>
-              <Text style={[styles.cell, styles.email]}>{student.email}</Text>
-              <Text style={[styles.cell, styles.metric]}>{student.progressPercent}%</Text>
-              <Text style={[styles.cell, styles.metric]}>{student.finalScore}</Text>
-              <Text style={[styles.cell, styles.certificate]}>
-                {student.certificateStatus} - {student.certificateNumber}
-              </Text>
+      {studentPages.map((studentPage, pageIndex) => (
+        <Page key={pageIndex} orientation="landscape" size="A4" style={styles.page}>
+          <View style={styles.topBar}>
+            <View>
+              <Text style={styles.brand}>EDUTRACK COE</Text>
+              <Text style={styles.brandCaption}>CENTER OF EXCELLENCE DIGITAL LEARNING</Text>
             </View>
-          ))}
-        </View>
-        <View style={styles.footer} fixed>
-          <Text>EduTrack COE - Laporan kelas internal</Text>
-          <Text
-            render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} dari ${totalPages}`}
-          />
-        </View>
-      </Page>
+            <Text style={styles.reportLabel}>LAPORAN KELAS</Text>
+          </View>
+          <Text style={styles.title}>Laporan Kelas - {classTitle}</Text>
+          <Text style={styles.subtitle}>
+            Dibuat pada {new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(generatedAt)}
+            {" - "}
+            Bobot nilai: Tugas {gradeWeights.assignmentWeight}% - Kuis {gradeWeights.quizWeight}% - Final Exam {gradeWeights.finalExamWeight}%
+          </Text>
+
+          <View style={styles.table}>
+            <View style={[styles.row, styles.header]}>
+              <Text style={[styles.cell, styles.index]}>No</Text>
+              <Text style={[styles.cell, styles.identity]}>Nama</Text>
+              <Text style={[styles.cell, styles.email]}>Email</Text>
+              <Text style={[styles.cell, styles.metric]}>Progress</Text>
+              <Text style={[styles.cell, styles.metric]}>Tugas</Text>
+              <Text style={[styles.cell, styles.metric]}>Kuis</Text>
+              <Text style={[styles.cell, styles.metric]}>Final Exam</Text>
+              <Text style={[styles.cell, styles.finalMetric]}>Nilai Akhir</Text>
+              <Text style={[styles.cell, styles.certificate]}>Sertifikat</Text>
+            </View>
+            {studentPage.map((student, index) => (
+              <View key={student.email} style={styles.row} wrap={false}>
+                <Text style={[styles.cell, styles.index]}>{pageIndex * studentsPerPage + index + 1}</Text>
+                <Text style={[styles.cell, styles.identity]}>{student.name}</Text>
+                <Text style={[styles.cell, styles.email]}>{student.email}</Text>
+                <Text style={[styles.cell, styles.metric]}>{student.progressPercent}%</Text>
+                <Text style={[styles.cell, styles.metric]}>{student.assignmentAverage}</Text>
+                <Text style={[styles.cell, styles.metric]}>{student.quizAverage}</Text>
+                <Text style={[styles.cell, styles.metric]}>{student.finalExamAverage}</Text>
+                <Text style={[styles.cell, styles.finalMetric]}>{student.finalScore}</Text>
+                <Text style={[styles.cell, styles.certificate]}>
+                  {student.certificateStatus} - {student.certificateNumber}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.footer} fixed>
+            <Text>EduTrack COE - Laporan kelas internal</Text>
+            <Text
+              render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} dari ${totalPages}`}
+            />
+          </View>
+        </Page>
+      ))}
     </Document>
   );
 }

@@ -1,0 +1,208 @@
+import { AlertTriangle, ArrowLeft, Download, FileText, RotateCcw, ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+
+import { DosenClassNavigation } from "@/components/layout/dosen-class-navigation";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
+import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { getFeedbackNotice } from "@/features/classes/feedback";
+import {
+  extractIdFromSlugParam,
+  getDosenClassPath,
+  getDosenClassPlagiarismPath,
+} from "@/features/classes/urls";
+import {
+  allowPlagiarismResubmitAction,
+  rejectPermanentPlagiarismAction,
+} from "@/features/plagiarism/actions";
+import { getDosenClassPlagiarismReport } from "@/features/plagiarism/data";
+import { requireRole } from "@/lib/auth";
+
+type DosenClassPlagiarismPageProps = {
+  params: Promise<{ classId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const statusLabels = {
+  flagged: "Perlu ditinjau",
+  passed: "Lolos",
+  pending: "Diproses",
+  rejected_permanent: "Ditolak permanen",
+  resubmit_allowed: "Resubmit dibuka",
+} as const;
+
+export default async function DosenClassPlagiarismPage({
+  params,
+  searchParams,
+}: DosenClassPlagiarismPageProps) {
+  const profile = await requireRole(["dosen"]);
+  const { classId: classParam } = await params;
+  const classId = extractIdFromSlugParam(classParam);
+  const data = await getDosenClassPlagiarismReport(profile.id, classId);
+  const feedback = getFeedbackNotice(await searchParams);
+
+  if (!data) {
+    notFound();
+  }
+
+  const canonicalPath = getDosenClassPlagiarismPath(data.classItem);
+  if (`/dosen/classes/${classParam}/plagiarism` !== canonicalPath) {
+    redirect(canonicalPath);
+  }
+
+  const flaggedCount = data.checks.filter((check) => check.status === "flagged").length;
+  const passedCount = data.checks.filter((check) => check.status === "passed").length;
+
+  return (
+    <DashboardShell profile={profile} title={`Plagiasi - ${data.classItem.title}`}>
+      <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-3">
+          <Breadcrumbs
+            items={[
+              { label: "Kelas", href: "/dosen/dashboard" },
+              { label: data.classItem.title, href: getDosenClassPath(data.classItem) },
+              { label: "Plagiasi" },
+            ]}
+          />
+          <Link className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-950" href={getDosenClassPath(data.classItem)}>
+            <ArrowLeft className="size-4" />
+            Kembali ke overview
+          </Link>
+        </div>
+
+        {feedback ? (
+          <DismissibleAlert title={feedback.title} tone={feedback.tone}>
+            {feedback.message}
+          </DismissibleAlert>
+        ) : null}
+
+        <section className="rounded-lg border border-red-200 bg-red-50 p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-red-700">Similarity tugas</p>
+              <h1 className="mt-2 text-2xl font-semibold text-red-950">Laporan Plagiasi</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-red-900">
+                Skor similarity adalah indikator untuk ditinjau, bukan keputusan otomatis. Periksa file mahasiswa sebelum melakukan override.
+              </p>
+            </div>
+            <ShieldAlert className="size-8 shrink-0 text-red-700" />
+          </div>
+        </section>
+
+        <DosenClassNavigation classItem={data.classItem} />
+
+        <section className="grid gap-3 sm:grid-cols-3">
+          <Metric label="Submission dicek" value={data.checks.length} />
+          <Metric label="Perlu ditinjau" tone="red" value={flaggedCount} />
+          <Metric label="Lolos" tone="emerald" value={passedCount} />
+        </section>
+
+        <section className="space-y-4">
+          {data.checks.length > 0 ? (
+            data.checks.map((check) => (
+              <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5" key={check.id}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-wide text-teal-700">{check.moduleTitle}</p>
+                    <h2 className="mt-1 font-semibold text-slate-950">{check.assignmentTitle}</h2>
+                    <p className="mt-1 text-sm text-slate-600">{check.studentName} - {check.studentEmail}</p>
+                    <a className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-900 transition hover:bg-sky-100" href={`/api/submissions/${check.submissionId}/signed-url`} target="_blank">
+                      <FileText className="size-4 shrink-0" />
+                      <span className="break-words [overflow-wrap:anywhere]">{check.fileName}</span>
+                      <Download className="size-4 shrink-0" />
+                    </a>
+                  </div>
+                  <div className={`w-fit rounded-md border px-3 py-2 text-sm font-semibold ${check.status === "flagged" ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+                    {check.similarityScore}% - {statusLabels[check.status]}
+                  </div>
+                </div>
+
+                <p className="mt-3 text-xs leading-5 text-slate-500">
+                  Threshold {check.thresholdPercent}% - ekstraksi {check.extractionStatus} - dicek {formatDate(check.checkedAt)}
+                </p>
+                {check.extractionError ? <p className="mt-1 text-xs leading-5 text-amber-700">{check.extractionError}</p> : null}
+
+                <details className="mt-4 rounded-md border border-slate-200 bg-slate-50">
+                  <summary className="cursor-pointer px-3 py-3 text-sm font-semibold text-slate-800">Pasangan similarity ({check.matches.length})</summary>
+                  <div className="space-y-2 border-t border-slate-200 p-3">
+                    {check.matches.length > 0 ? check.matches.map((match) => (
+                      <div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between" key={match.matchedSubmissionId}>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900">{match.studentName}</p>
+                          <p className="text-xs text-slate-500">{match.studentEmail}</p>
+                        </div>
+                        <a className="inline-flex max-w-full items-center gap-2 text-sm font-semibold text-sky-700 hover:text-sky-900" href={`/api/submissions/${match.matchedSubmissionId}/signed-url`} target="_blank">
+                          <span className="break-words [overflow-wrap:anywhere]">{match.fileName}</span>
+                          <Download className="size-4 shrink-0" />
+                          <span className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-700">{match.similarityScore}%</span>
+                        </a>
+                      </div>
+                    )) : <p className="text-sm text-slate-600">Belum ada pasangan submission yang mirip.</p>}
+                  </div>
+                </details>
+
+                {check.status === "flagged" ? (
+                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                    <OverrideForm action={allowPlagiarismResubmitAction} buttonLabel="Izinkan ulang upload" submissionId={check.submissionId} tone="amber" />
+                    <OverrideForm action={rejectPermanentPlagiarismAction} buttonLabel="Tolak permanen" submissionId={check.submissionId} tone="red" />
+                  </div>
+                ) : null}
+
+                {check.overrides.length > 0 ? (
+                  <div className="mt-4 border-t border-slate-200 pt-4">
+                    <p className="text-sm font-semibold text-slate-900">Riwayat override</p>
+                    <div className="mt-2 space-y-2">
+                      {check.overrides.map((item) => (
+                        <div className="rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600" key={item.id}>
+                          <span className="font-semibold text-slate-900">{item.action}</span> oleh {item.actorName} - {formatDate(item.createdAt)}
+                          <p>{item.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </article>
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-sm leading-6 text-slate-600">
+              Belum ada submission yang diperiksa. Hasil akan muncul otomatis setelah mahasiswa mengunggah tugas baru.
+            </div>
+          )}
+        </section>
+      </div>
+    </DashboardShell>
+  );
+}
+
+function Metric({ label, tone = "slate", value }: { label: string; tone?: "emerald" | "red" | "slate"; value: number }) {
+  const tones = { emerald: "border-emerald-200 bg-emerald-50 text-emerald-800", red: "border-red-200 bg-red-50 text-red-800", slate: "border-slate-200 bg-white text-slate-800" };
+  return <div className={`rounded-lg border p-4 shadow-sm ${tones[tone]}`}><p className="text-sm font-semibold">{label}</p><p className="mt-2 text-3xl font-semibold">{value}</p></div>;
+}
+
+function OverrideForm({ action, buttonLabel, submissionId, tone }: { action: (formData: FormData) => void | Promise<void>; buttonLabel: string; submissionId: string; tone: "amber" | "red" }) {
+  const isRed = tone === "red";
+  return (
+    <form action={action} className={`rounded-md border p-3 ${isRed ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
+      <input name="submissionId" type="hidden" value={submissionId} />
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Alasan keputusan</span>
+        <textarea className="min-h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100" minLength={10} name="reason" required />
+      </label>
+      {isRed ? (
+        <ConfirmSubmitButton className="mt-3 inline-flex items-center gap-2 rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-800" message="Tolak permanen submission ini dan tetapkan nilai 0?">
+          <AlertTriangle className="size-4" />{buttonLabel}
+        </ConfirmSubmitButton>
+      ) : (
+        <button className="mt-3 inline-flex items-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100" type="submit">
+          <RotateCcw className="size-4" />{buttonLabel}
+        </button>
+      )}
+    </form>
+  );
+}
+
+function formatDate(value: Date | null) {
+  return value ? new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(value) : "-";
+}

@@ -1,11 +1,15 @@
 import {
   ArrowLeft,
+  AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   Download,
   FileText,
+  Inbox,
   Plus,
   RotateCcw,
   Save,
+  Settings,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -23,6 +27,10 @@ import {
   reviewSubmissionAction,
   updateAssignmentAction,
 } from "@/features/assignments/actions";
+import {
+  allowPlagiarismResubmitAction,
+  rejectPermanentPlagiarismAction,
+} from "@/features/plagiarism/actions";
 import { getDosenModuleAssignmentsDetail } from "@/features/classes/data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
@@ -151,7 +159,20 @@ export default async function DosenModuleAssignmentsPage({
           </div>
         </section>
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+                Daftar tugas
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-950">Tugas per step</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Buka step untuk mengelola tugas. Submission dan form penilaian dapat dibuka saat
+                diperlukan.
+              </p>
+            </div>
+            <span className="text-sm font-semibold text-slate-500">{assignmentCount} tugas</span>
+          </div>
           {data.moduleItem.steps.length > 0 ? (
             data.moduleItem.steps.map((step, index) => (
               <CollapsibleSection
@@ -169,7 +190,7 @@ export default async function DosenModuleAssignmentsPage({
                 title={step.title}
                 tone="step"
               >
-                <div className="space-y-4 p-4">
+                <div className="min-w-0 space-y-4">
                   {step.assignments.length > 0 ? (
                     <div className="space-y-4">
                       {step.assignments.map((assignment) => (
@@ -211,9 +232,13 @@ export default async function DosenModuleAssignmentsPage({
                             </div>
                           </div>
 
-                          <details className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50">
-                            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-neutral-800 [&::-webkit-details-marker]:hidden">
-                              Edit pengaturan tugas
+                          <details className="group mt-4 rounded-md border border-neutral-200 bg-neutral-50">
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-neutral-800 [&::-webkit-details-marker]:hidden">
+                              <span className="inline-flex items-center gap-2">
+                                <Settings className="size-4 text-neutral-500" />
+                                Pengaturan tugas
+                              </span>
+                              <ChevronDown className="size-4 text-neutral-500 transition group-open:rotate-180" />
                             </summary>
                             <div className="space-y-3 border-t border-neutral-200 p-4">
                               <form
@@ -283,10 +308,15 @@ export default async function DosenModuleAssignmentsPage({
                             </div>
                           </details>
 
-                          <div className="mt-4 space-y-3 border-t border-neutral-200 pt-4">
-                            <p className="text-sm font-semibold text-neutral-800">
-                              Submission mahasiswa ({assignment.submissions.length})
-                            </p>
+                          <details className="group mt-4 rounded-md border border-sky-200 bg-sky-50/60">
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-sky-950 [&::-webkit-details-marker]:hidden">
+                              <span className="inline-flex items-center gap-2">
+                                <Inbox className="size-4 text-sky-700" />
+                                Submission mahasiswa ({assignment.submissions.length})
+                              </span>
+                              <ChevronDown className="size-4 text-sky-700 transition group-open:rotate-180" />
+                            </summary>
+                            <div className="space-y-3 border-t border-sky-200 p-3 sm:p-4">
                             {assignment.submissions.length > 0 ? (
                               <div className="space-y-3">
                                 {assignment.submissions.map((submission) => (
@@ -311,6 +341,24 @@ export default async function DosenModuleAssignmentsPage({
                                           {submissionStatusLabels[submission.status]} -{" "}
                                           {formatDateTime(submission.submittedAt)}
                                         </p>
+                                        {submission.plagiarismCheckId ? (
+                                          <div
+                                            className={`mt-3 rounded-md border px-3 py-2 text-sm ${
+                                              submission.plagiarismStatus === "flagged"
+                                                ? "border-red-200 bg-red-50 text-red-900"
+                                                : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                                            }`}
+                                          >
+                                            <p className="inline-flex items-center gap-2 font-semibold">
+                                              <AlertTriangle className="size-4 shrink-0" />
+                                              Similarity {submission.similarityScore ?? 0}%
+                                            </p>
+                                            <p className="mt-1 text-xs leading-5 opacity-80">
+                                              Threshold {submission.thresholdPercent ?? 70}% - ekstraksi{" "}
+                                              {submission.extractionStatus ?? "pending"}
+                                            </p>
+                                          </div>
+                                        ) : null}
                                         {submission.note ? (
                                           <p className="mt-2 text-sm leading-6 text-sky-900">
                                             Catatan: {submission.note}
@@ -329,46 +377,97 @@ export default async function DosenModuleAssignmentsPage({
                                       ) : null}
                                     </div>
 
-                                    <form
-                                      action={reviewSubmissionAction}
-                                      className="mt-4 grid gap-3 border-t border-sky-200 pt-4 md:grid-cols-[140px_110px_1fr_auto]"
-                                    >
-                                      <input name="submissionId" type="hidden" value={submission.id} />
-                                      <label className="block space-y-2">
-                                        <span className="text-sm font-medium text-sky-900">Status</span>
-                                        <select
-                                          className="w-full rounded-md border border-sky-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-                                          defaultValue={submission.status === "accepted" ? "accepted" : "rejected"}
-                                          name="status"
-                                        >
-                                          <option value="accepted">Diterima</option>
-                                          <option value="rejected">Ditolak</option>
-                                        </select>
-                                      </label>
-                                      <Field
-                                        defaultValue={submission.score?.toString() ?? assignment.maxScore.toString()}
-                                        label="Nilai"
-                                        name="score"
-                                        type="number"
-                                      />
-                                      <TextArea
-                                        defaultValue={submission.feedback ?? ""}
-                                        label="Feedback"
-                                        name="feedback"
-                                      />
-                                      <div className="flex items-end">
-                                        <button
-                                          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                                          type="submit"
-                                        >
-                                          <CheckCircle2 className="size-4" />
-                                          Verifikasi
-                                        </button>
+                                    {submission.plagiarismStatus === "flagged" ? (
+                                      <div className="mt-4 space-y-3 border-t border-red-200 pt-4">
+                                        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-3 text-sm leading-6 text-red-900">
+                                          Submission dikunci sementara. Periksa file dan hasil similarity sebelum memilih keputusan override.
+                                        </div>
+                                        <div className="grid gap-3 lg:grid-cols-2">
+                                          <form
+                                            action={allowPlagiarismResubmitAction}
+                                            className="rounded-md border border-amber-200 bg-amber-50 p-3"
+                                          >
+                                            <input name="submissionId" type="hidden" value={submission.id} />
+                                            <TextArea label="Alasan perbaikan" name="reason" />
+                                            <button
+                                              className="mt-3 inline-flex items-center justify-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+                                              type="submit"
+                                            >
+                                              <RotateCcw className="size-4" />
+                                              Izinkan ulang upload
+                                            </button>
+                                          </form>
+                                          <form
+                                            action={rejectPermanentPlagiarismAction}
+                                            className="rounded-md border border-red-200 bg-red-50 p-3"
+                                          >
+                                            <input name="submissionId" type="hidden" value={submission.id} />
+                                            <TextArea label="Alasan penolakan permanen" name="reason" />
+                                            <ConfirmSubmitButton
+                                              className="mt-3 inline-flex items-center justify-center gap-2 rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-800"
+                                              message="Tolak permanen submission ini dan tetapkan nilai 0?"
+                                            >
+                                              <AlertTriangle className="size-4" />
+                                              Tolak permanen
+                                            </ConfirmSubmitButton>
+                                          </form>
+                                        </div>
                                       </div>
-                                    </form>
+                                    ) : (
+                                      <details className="group mt-4 rounded-md border border-sky-200 bg-white">
+                                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-semibold text-sky-900 [&::-webkit-details-marker]:hidden">
+                                          <span className="inline-flex items-center gap-2">
+                                            <CheckCircle2 className="size-4 text-sky-700" />
+                                            Penilaian dan feedback
+                                          </span>
+                                          <ChevronDown className="size-4 text-sky-700 transition group-open:rotate-180" />
+                                        </summary>
+                                        <form
+                                          action={reviewSubmissionAction}
+                                          className="grid gap-3 border-t border-sky-200 p-3 md:grid-cols-[140px_110px_1fr_auto]"
+                                        >
+                                          <input name="submissionId" type="hidden" value={submission.id} />
+                                          <label className="block space-y-2">
+                                            <span className="text-sm font-medium text-sky-900">Status</span>
+                                            <select
+                                              className="w-full rounded-md border border-sky-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+                                              defaultValue={
+                                                submission.status === "accepted" ? "accepted" : "rejected"
+                                              }
+                                              name="status"
+                                            >
+                                              <option value="accepted">Diterima</option>
+                                              <option value="rejected">Ditolak</option>
+                                            </select>
+                                          </label>
+                                          <Field
+                                            defaultValue={
+                                              submission.score?.toString() ??
+                                              assignment.maxScore.toString()
+                                            }
+                                            label="Nilai"
+                                            name="score"
+                                            type="number"
+                                          />
+                                          <TextArea
+                                            defaultValue={submission.feedback ?? ""}
+                                            label="Feedback"
+                                            name="feedback"
+                                          />
+                                          <div className="flex items-end">
+                                            <button
+                                              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
+                                              type="submit"
+                                            >
+                                              <CheckCircle2 className="size-4" />
+                                              Verifikasi
+                                            </button>
+                                          </div>
+                                        </form>
+                                      </details>
+                                    )}
 
                                     {submission.status === "rejected" ||
-                                    submission.status === "locked" ||
                                     submission.status === "resubmit_allowed" ? (
                                       <form action={allowResubmitAction} className="mt-3">
                                         <input name="submissionId" type="hidden" value={submission.id} />
@@ -389,7 +488,8 @@ export default async function DosenModuleAssignmentsPage({
                                 Belum ada submission untuk tugas ini.
                               </p>
                             )}
-                          </div>
+                            </div>
+                          </details>
                         </article>
                       ))}
                     </div>
@@ -399,40 +499,51 @@ export default async function DosenModuleAssignmentsPage({
                     </p>
                   )}
 
-                  <form
-                    action={createAssignmentAction}
-                    className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_120px_auto]"
-                  >
-                    <input name="stepId" type="hidden" value={step.id} />
-                    <Field label="Nama tugas" name="title" placeholder="Upload laporan praktik" required />
-                    <Field label="Tenggat" name="dueAt" type="datetime-local" />
-                    <Field defaultValue="100" label="Nilai maks" name="maxScore" type="number" />
-                    <label className="flex items-end gap-2 pb-2 text-sm text-neutral-700">
-                      <input defaultChecked name="isActive" type="checkbox" />
-                      Aktif
-                    </label>
-                    <div className="md:col-span-3">
-                      <TextArea label="Deskripsi tugas" name="description" />
-                    </div>
-                    <label className="block space-y-2 md:col-span-3">
-                      <span className="text-sm font-medium text-neutral-700">Lampiran instruksi PDF</span>
-                      <input
-                        accept=".pdf,application/pdf"
-                        className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-                        name="attachment"
-                        type="file"
-                      />
-                    </label>
-                    <div className="flex items-end">
-                      <button
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                        type="submit"
-                      >
-                        <Plus className="size-4" />
-                        Buat tugas
-                      </button>
-                    </div>
-                  </form>
+                  <details className="group rounded-md border border-slate-200 bg-slate-50">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+                      <span className="inline-flex items-center gap-2">
+                        <Plus className="size-4 text-teal-700" />
+                        Tambah tugas pada step ini
+                      </span>
+                      <ChevronDown className="size-4 text-slate-500 transition group-open:rotate-180" />
+                    </summary>
+                    <form
+                      action={createAssignmentAction}
+                      className="grid gap-3 border-t border-slate-200 bg-white p-4 md:grid-cols-[1fr_160px_120px_auto]"
+                    >
+                      <input name="stepId" type="hidden" value={step.id} />
+                      <Field label="Nama tugas" name="title" placeholder="Upload laporan praktik" required />
+                      <Field label="Tenggat" name="dueAt" type="datetime-local" />
+                      <Field defaultValue="100" label="Nilai maks" name="maxScore" type="number" />
+                      <label className="flex items-end gap-2 pb-2 text-sm text-neutral-700">
+                        <input defaultChecked name="isActive" type="checkbox" />
+                        Aktif
+                      </label>
+                      <div className="md:col-span-3">
+                        <TextArea label="Deskripsi tugas" name="description" />
+                      </div>
+                      <label className="block space-y-2 md:col-span-3">
+                        <span className="text-sm font-medium text-neutral-700">
+                          Lampiran instruksi PDF
+                        </span>
+                        <input
+                          accept=".pdf,application/pdf"
+                          className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+                          name="attachment"
+                          type="file"
+                        />
+                      </label>
+                      <div className="flex items-end">
+                        <button
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
+                          type="submit"
+                        >
+                          <Plus className="size-4" />
+                          Buat tugas
+                        </button>
+                      </div>
+                    </form>
+                  </details>
                 </div>
               </CollapsibleSection>
             ))

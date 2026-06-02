@@ -47,6 +47,7 @@ describe("assignment access rules", () => {
   it("maps submission status to progress status", () => {
     expect(progressStatusFromSubmission("accepted")).toBe("verified");
     expect(progressStatusFromSubmission("rejected")).toBe("failed");
+    expect(progressStatusFromSubmission("resubmit_allowed")).toBe("in_progress");
     expect(progressStatusFromSubmission("submitted")).toBe("submitted");
     expect(progressStatusFromSubmission("locked")).toBe("locked");
   });

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { assignments, classes, classMembers, moduleSteps, modules } from "@/db/schema";
 import { ASSIGNMENT_ATTACHMENTS_BUCKET } from "@/features/assignments/assignment-storage";
 import { canViewAssignment } from "@/features/assignments/access";
+import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { getCurrentProfile } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +32,7 @@ export async function GET(_request: Request, context: AssignmentAttachmentRouteC
       classStatus: classes.status,
       isActive: assignments.isActive,
       moduleIsLocked: modules.isLocked,
+      moduleId: modules.id,
     })
     .from(assignments)
     .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
@@ -70,6 +72,17 @@ export async function GET(_request: Request, context: AssignmentAttachmentRouteC
 
   if (!canAccess) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (
+    profile.role === "mahasiswa" &&
+    (await hasPriorFlaggedSubmission({
+      classId: assignment.classId,
+      moduleId: assignment.moduleId,
+      studentId: profile.id,
+    }))
+  ) {
+    return NextResponse.json({ error: "Temporarily locked by plagiarism review" }, { status: 403 });
   }
 
   const supabase = await createClient();

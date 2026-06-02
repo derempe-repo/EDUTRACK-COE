@@ -15,6 +15,7 @@ import {
   modules,
   moduleSteps,
   notifications,
+  plagiarismChecks,
   profiles,
   questionOptions,
   questions,
@@ -23,6 +24,7 @@ import {
   submissions,
 } from "@/db/schema";
 import { getCertificateEligibility } from "@/features/certificates/eligibility";
+import { calculateWeightedClassScore } from "@/features/grades/class-score";
 import { db } from "@/lib/db";
 
 type CountRow = {
@@ -152,6 +154,9 @@ export async function getDosenClassDetail(lecturerId: string, classId: string) {
       title: classes.title,
       description: classes.description,
       status: classes.status,
+      assignmentWeight: classes.assignmentWeight,
+      quizWeight: classes.quizWeight,
+      finalExamWeight: classes.finalExamWeight,
       publishedAt: classes.publishedAt,
       createdAt: classes.createdAt,
       updatedAt: classes.updatedAt,
@@ -384,6 +389,10 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
         feedback: submissions.feedback,
         note: submissions.note,
         plagiarismStatus: submissions.plagiarismStatus,
+        plagiarismCheckId: plagiarismChecks.id,
+        similarityScore: plagiarismChecks.similarityScore,
+        thresholdPercent: plagiarismChecks.thresholdPercent,
+        extractionStatus: plagiarismChecks.extractionStatus,
         submittedAt: submissions.submittedAt,
         reviewedAt: submissions.reviewedAt,
       })
@@ -391,6 +400,7 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
       .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
       .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
       .innerJoin(profiles, eq(profiles.id, submissions.studentId))
+      .leftJoin(plagiarismChecks, eq(plagiarismChecks.submissionId, submissions.id))
       .where(eq(moduleSteps.moduleId, moduleId))
       .orderBy(desc(submissions.submittedAt)),
     db
@@ -832,6 +842,10 @@ export async function getDosenModuleAssignmentsDetail(
         feedback: submissions.feedback,
         note: submissions.note,
         plagiarismStatus: submissions.plagiarismStatus,
+        plagiarismCheckId: plagiarismChecks.id,
+        similarityScore: plagiarismChecks.similarityScore,
+        thresholdPercent: plagiarismChecks.thresholdPercent,
+        extractionStatus: plagiarismChecks.extractionStatus,
         submittedAt: submissions.submittedAt,
         reviewedAt: submissions.reviewedAt,
       })
@@ -839,6 +853,7 @@ export async function getDosenModuleAssignmentsDetail(
       .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
       .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
       .innerJoin(profiles, eq(profiles.id, submissions.studentId))
+      .leftJoin(plagiarismChecks, eq(plagiarismChecks.submissionId, submissions.id))
       .where(eq(moduleSteps.moduleId, moduleId))
       .orderBy(desc(submissions.submittedAt)),
   ]);
@@ -882,6 +897,9 @@ export async function getMahasiswaDashboardData(studentId: string) {
       title: classes.title,
       description: classes.description,
       status: classes.status,
+      assignmentWeight: classes.assignmentWeight,
+      quizWeight: classes.quizWeight,
+      finalExamWeight: classes.finalExamWeight,
       joinedAt: classMembers.joinedAt,
     })
     .from(classMembers)
@@ -975,7 +993,12 @@ export async function getMahasiswaDashboardData(studentId: string) {
               ),
             ),
           db
-            .select({ assignmentId: submissions.assignmentId, classId: modules.classId, score: submissions.score })
+            .select({
+              assignmentId: submissions.assignmentId,
+              classId: modules.classId,
+              maxScore: assignments.maxScore,
+              score: submissions.score,
+            })
             .from(submissions)
             .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
             .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
@@ -1029,7 +1052,12 @@ export async function getMahasiswaDashboardData(studentId: string) {
               ),
             ),
           db
-            .select({ score: grades.score })
+            .select({
+              classId: grades.classId,
+              maxScore: grades.maxScore,
+              score: grades.score,
+              sourceType: grades.sourceType,
+            })
             .from(grades)
             .where(eq(grades.studentId, studentId)),
         ])
@@ -1111,14 +1139,25 @@ export async function getMahasiswaDashboardData(studentId: string) {
             100,
         )
       : 0;
-  const scoredSubmissions = acceptedSubmissionRows.filter((submission) => submission.score !== null);
-  const allScores = [
-    ...scoredSubmissions.map((submission) => Number(submission.score)),
-    ...gradeRows.map((grade) => Number(grade.score)),
-  ];
+  const classScores = enrolledClasses.map((classItem) =>
+    calculateWeightedClassScore({
+      assignmentScores: acceptedSubmissionRows
+        .filter((submission) => submission.classId === classItem.id && submission.score !== null)
+        .map((submission) => ({ maxScore: submission.maxScore, score: Number(submission.score) })),
+      assignmentWeight: classItem.assignmentWeight,
+      finalExamScores: gradeRows
+        .filter((grade) => grade.classId === classItem.id && grade.sourceType === "final_exam")
+        .map((grade) => ({ maxScore: grade.maxScore, score: grade.score })),
+      finalExamWeight: classItem.finalExamWeight,
+      quizScores: gradeRows
+        .filter((grade) => grade.classId === classItem.id && grade.sourceType === "quiz")
+        .map((grade) => ({ maxScore: grade.maxScore, score: grade.score })),
+      quizWeight: classItem.quizWeight,
+    }),
+  );
   const averageScore =
-    allScores.length > 0
-      ? Math.round(allScores.reduce((sum, score) => sum + score, 0) / allScores.length)
+    classScores.length > 0
+      ? Math.round(classScores.reduce((sum, score) => sum + score.finalScore, 0) / classScores.length)
       : 0;
 
   return {
@@ -1510,6 +1549,23 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
     stepsByModule.set(step.moduleId, current);
   }
 
+  const moduleIdByStep = new Map(stepRows.map((step) => [step.id, step.moduleId]));
+  const stepIdByAssignment = new Map(
+    assignmentRows.map((assignment) => [assignment.id, assignment.moduleStepId]),
+  );
+  const flaggedModuleIds = new Set(
+    submissionRows
+      .filter((submission) => submission.plagiarismStatus === "flagged")
+      .map((submission) => stepIdByAssignment.get(submission.assignmentId))
+      .map((stepId) => (stepId ? moduleIdByStep.get(stepId) : undefined))
+      .filter((moduleId): moduleId is string => Boolean(moduleId)),
+  );
+  const firstFlaggedModuleSortOrder =
+    moduleRows
+      .filter((moduleItem) => flaggedModuleIds.has(moduleItem.id))
+      .map((moduleItem) => moduleItem.sortOrder)
+      .sort((left, right) => left - right)[0] ?? null;
+
   const modulesWithCompletion = moduleRows.map((moduleItem) => {
       const moduleSteps = stepsByModule.get(moduleItem.id) ?? [];
       const moduleMaterials = moduleSteps.flatMap((step) => step.materials);
@@ -1531,9 +1587,13 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
       const requiredCompletionCount =
         moduleMaterials.length + moduleAssignments.length + moduleQuizzes.length + (finalExam ? 1 : 0);
       const completedCount = readMaterials + acceptedAssignments + passedQuizzes + finalExamPassed;
+      const isPlagiarismLocked =
+        firstFlaggedModuleSortOrder !== null && moduleItem.sortOrder > firstFlaggedModuleSortOrder;
 
       return {
         ...moduleItem,
+        isLocked: moduleItem.isLocked || isPlagiarismLocked,
+        lockReason: isPlagiarismLocked ? "plagiarism" : moduleItem.isLocked ? "manual" : null,
         completion: {
           acceptedAssignments,
           completedCount,

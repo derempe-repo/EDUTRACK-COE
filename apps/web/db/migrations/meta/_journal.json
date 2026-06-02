@@ -92,6 +92,55 @@
       "when": 1780277427414,
       "tag": "0012_certificate_verifications_exports",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780370100000,
+      "tag": "0013_class_grade_weights",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1780381768114,
+      "tag": "0014_seed_admin_system_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1780381800000,
+      "tag": "0015_align_plagiarism_threshold",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1780381830000,
+      "tag": "0016_add_plagiarism_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1780382212000,
+      "tag": "0017_harden_plagiarism_locks",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1780382410000,
+      "tag": "0018_optimize_plagiarism_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1780405894040,
+      "tag": "0019_fix_class_delete_quiz_attempt_fk",
+      "breakpoints": true
     }
   ]
 }

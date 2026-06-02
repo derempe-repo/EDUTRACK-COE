@@ -8,7 +8,7 @@ type SubmissionStatus =
   | "resubmit_allowed"
   | "submitted"
   | "under_review";
-type ProgressStatus = "failed" | "locked" | "not_started" | "submitted" | "verified";
+type ProgressStatus = "failed" | "in_progress" | "locked" | "not_started" | "submitted" | "verified";
 
 type AssignmentAccessInput = {
   assignmentIsActive: boolean;
@@ -61,8 +61,12 @@ export function progressStatusFromSubmission(status: SubmissionStatus): Progress
     return "verified";
   }
 
-  if (status === "rejected" || status === "resubmit_allowed") {
+  if (status === "rejected") {
     return "failed";
+  }
+
+  if (status === "resubmit_allowed") {
+    return "in_progress";
   }
 
   if (status === "locked") {

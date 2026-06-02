@@ -40,6 +40,10 @@ export function getDosenClassSettingsPath(classItem: { id: string; title: string
   return `${getDosenClassPath(classItem)}/settings`;
 }
 
+export function getDosenClassPlagiarismPath(classItem: { id: string; title: string }) {
+  return `${getDosenClassPath(classItem)}/plagiarism`;
+}
+
 export function getMahasiswaClassPath(classItem: { id: string; title: string }) {
   return `/mahasiswa/classes/${classSlug(classItem)}`;
 }

@@ -58,7 +58,7 @@ export default async function MahasiswaDashboardPage() {
             />
             <StatCard
               icon={<Star className="size-4" />}
-              label="Rata-rata nilai"
+              label="Rata-rata nilai akhir"
               value={data.stats.averageScore > 0 ? data.stats.averageScore : "Belum ada"}
             />
             <StatCard

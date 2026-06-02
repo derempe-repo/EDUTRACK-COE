@@ -1,5 +1,7 @@
 import {
   ArrowLeft,
+  ArrowRight,
+  AlertTriangle,
   Award,
   BookOpen,
   CheckCircle2,
@@ -38,6 +40,15 @@ type MahasiswaClassDetailPageProps = {
     classId: string;
   }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+type NextLearningTarget = {
+  href: string;
+  label: string;
+  moduleId: string;
+  moduleTitle: string;
+  stepId: string | null;
+  stepTitle: string;
 };
 
 const materialTypeLabels = {
@@ -116,6 +127,61 @@ export default async function MahasiswaClassDetailPage({
     0,
   );
   const progressPercent = data.classProgress.percent;
+  const nextLearningTarget = data.modules
+    .filter((moduleItem) => !moduleItem.isLocked)
+    .flatMap<NextLearningTarget>((moduleItem) => {
+      const nextStep = moduleItem.steps.find(
+        (step) =>
+          step.materials.some((material) => !material.read) ||
+          step.assignments.some((assignment) => assignment.submission?.status !== "accepted") ||
+          step.quizzes.some(
+            (quiz) =>
+              quiz.attempt?.status !== "submitted" ||
+              (quiz.attempt.score ?? 0) < quiz.passingScore,
+          ),
+      );
+
+      if (nextStep) {
+        return [
+          {
+            href: `#step-${nextStep.id}`,
+            label: "Lanjutkan belajar",
+            moduleId: moduleItem.id,
+            moduleTitle: moduleItem.title,
+            stepId: nextStep.id,
+            stepTitle: nextStep.title,
+          },
+        ];
+      }
+
+      if (moduleItem.finalExam && moduleItem.completion.finalExamPassed === 0) {
+        return [
+          {
+            href: `#final-exam-${moduleItem.id}`,
+            label: "Lanjutkan ke final exam",
+            moduleId: moduleItem.id,
+            moduleTitle: moduleItem.title,
+            stepId: null,
+            stepTitle: moduleItem.finalExam.title,
+          },
+        ];
+      }
+
+      return [];
+    })
+    .at(0);
+  const activeModuleId =
+    nextLearningTarget?.moduleId ??
+    data.modules.find(
+      (moduleItem) =>
+        !moduleItem.isLocked &&
+        moduleItem.completion.requiredCompletionCount > 0 &&
+        moduleItem.completion.percent < 100,
+    )?.id ??
+    data.modules.find(
+      (moduleItem) => !moduleItem.isLocked && moduleItem.completion.requiredCompletionCount > 0,
+    )?.id ??
+    data.modules.find((moduleItem) => !moduleItem.isLocked)?.id;
 
   return (
     <DashboardShell profile={profile} title={data.classItem.title}>
@@ -178,6 +244,25 @@ export default async function MahasiswaClassDetailPage({
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
+                {nextLearningTarget ? (
+                  <div className="mt-4 flex flex-col gap-3 border-t border-teal-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+                        Berikutnya
+                      </p>
+                      <p className="mt-1 truncate text-sm font-semibold text-teal-950">
+                        {nextLearningTarget.moduleTitle} - {nextLearningTarget.stepTitle}
+                      </p>
+                    </div>
+                    <a
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+                      href={nextLearningTarget.href}
+                    >
+                      {nextLearningTarget.label}
+                      <ArrowRight className="size-4" />
+                    </a>
+                  </div>
+                ) : null}
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <MiniStat icon={<Layers className="size-4" />} label="Modul" value={data.modules.length} />
@@ -187,28 +272,43 @@ export default async function MahasiswaClassDetailPage({
             </div>
           </div>
 
-          <div className="h-fit self-start overflow-hidden rounded-lg border border-amber-200 bg-white shadow-sm">
-            <div className="border-b border-amber-100 bg-amber-50 p-4 sm:p-5">
-              <div className="flex items-start gap-3">
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-800">
-                  <Award className="size-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-                    Sertifikat kelulusan
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold text-slate-950">
-                    {data.certificate?.status === "issued"
-                      ? "Sertifikat siap diunduh"
-                      : data.certificate?.status === "revoked"
-                        ? "Sertifikat dicabut"
-                        : data.certificateEligibility.isEligible
-                          ? "Kelas sudah diselesaikan"
-                          : "Masih dalam proses belajar"}
-                  </h2>
+          <details
+            className="group h-fit self-start overflow-hidden rounded-lg border border-amber-200 bg-white shadow-sm"
+            id="certificate"
+            open={
+              data.certificate?.status === "issued" ||
+              data.certificate?.status === "revoked" ||
+              data.certificateEligibility.isEligible ||
+              data.certificateEligibility.percent >= 80
+            }
+          >
+            <summary className="cursor-pointer list-none border-b border-amber-100 bg-amber-50 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-800">
+                    <Award className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                      Sertifikat kelulusan
+                    </p>
+                    <h2 className="mt-1 text-base font-semibold text-slate-950">
+                      {data.certificate?.status === "issued"
+                        ? "Sertifikat siap diunduh"
+                        : data.certificate?.status === "revoked"
+                          ? "Sertifikat dicabut"
+                          : data.certificateEligibility.isEligible
+                            ? "Kelas sudah diselesaikan"
+                            : "Masih dalam proses belajar"}
+                    </h2>
+                  </div>
                 </div>
+                <span className="flex shrink-0 items-center gap-2 text-sm font-semibold text-amber-800">
+                  {data.certificateEligibility.percent}%
+                  <ChevronDown className="size-4 transition group-open:rotate-180" />
+                </span>
               </div>
-            </div>
+            </summary>
 
             <div className="space-y-4 p-4 sm:p-5">
               {data.certificate ? (
@@ -279,7 +379,7 @@ export default async function MahasiswaClassDetailPage({
                 </form>
               ) : null}
             </div>
-          </div>
+          </details>
         </section>
 
         <section className="space-y-4 sm:space-y-5">
@@ -296,7 +396,7 @@ export default async function MahasiswaClassDetailPage({
 
           {data.modules.length > 0 ? (
             <div className="space-y-4 sm:space-y-5">
-              {data.modules.map((moduleItem, moduleIndex) => {
+              {data.modules.map((moduleItem) => {
               const canShowContent = canShowStudentModuleContent({
                 classStatus: data.classItem.status,
                 moduleIsLocked: moduleItem.isLocked,
@@ -305,7 +405,7 @@ export default async function MahasiswaClassDetailPage({
 
                 return (
                   <CollapsibleSection
-                  defaultOpen={moduleIndex === 0 && canShowContent}
+                  defaultOpen={moduleItem.id === activeModuleId && canShowContent}
                   eyebrow={`Modul ${moduleItem.sortOrder}`}
                   key={moduleItem.id}
                   meta={
@@ -330,7 +430,9 @@ export default async function MahasiswaClassDetailPage({
                 >
                   {!canShowContent ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
-                      Modul ini masih terkunci. Materi akan muncul setelah dosen membuka aksesnya.
+                      {moduleItem.lockReason === "plagiarism"
+                        ? "Modul ini terkunci sementara karena submission pada modul sebelumnya perlu ditinjau dosen."
+                        : "Modul ini masih terkunci. Materi akan muncul setelah dosen membuka aksesnya."}
                     </div>
                   ) : moduleItem.steps.length > 0 ? (
                     <div className="space-y-4">
@@ -370,11 +472,25 @@ export default async function MahasiswaClassDetailPage({
                           />
                         </div>
                       </div>
-                      {moduleItem.steps.map((step, stepIndex) => (
+                      {moduleItem.steps.map((step, stepIndex) => {
+                        const isActiveStep =
+                          step.id === nextLearningTarget?.stepId || (!nextLearningTarget && stepIndex === 0);
+                        const hasUnreadMaterials = step.materials.some((material) => !material.read);
+                        const hasPendingAssignments = step.assignments.some(
+                          (assignment) => assignment.submission?.status !== "accepted",
+                        );
+                        const hasPendingQuizzes = step.quizzes.some(
+                          (quiz) =>
+                            quiz.attempt?.status !== "submitted" ||
+                            (quiz.attempt.score ?? 0) < quiz.passingScore,
+                        );
+
+                        return (
                       <details
                         className="group overflow-hidden rounded-lg border border-l-4 border-slate-200 border-l-teal-500 bg-white shadow-sm"
+                        id={`step-${step.id}`}
                         key={step.id}
-                        open={stepIndex === 0}
+                        open={isActiveStep}
                       >
                         <summary className="flex cursor-pointer list-none items-start justify-between gap-4 px-4 py-4 transition hover:bg-slate-50 sm:px-5 [&::-webkit-details-marker]:hidden">
                           <span className="min-w-0">
@@ -385,15 +501,26 @@ export default async function MahasiswaClassDetailPage({
                             <span className="mt-1 block text-sm leading-6 text-slate-500">
                               {step.description ?? "Belum ada deskripsi step."}
                             </span>
-                            <span className="mt-3 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
-                              {step.progress?.status === "verified" ? (
-                                <CheckCircle2 className="size-3 text-emerald-600" />
-                              ) : step.progress?.status === "failed" ? (
-                                <XCircle className="size-3 text-red-600" />
-                              ) : (
-                                <Clock3 className="size-3 text-amber-600" />
-                              )}
-                              {progressStatusLabels[step.progress?.status ?? "not_started"]}
+                            <span className="mt-3 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
+                                {step.progress?.status === "verified" ? (
+                                  <CheckCircle2 className="size-3 text-emerald-600" />
+                                ) : step.progress?.status === "failed" ? (
+                                  <XCircle className="size-3 text-red-600" />
+                                ) : (
+                                  <Clock3 className="size-3 text-amber-600" />
+                                )}
+                                {progressStatusLabels[step.progress?.status ?? "not_started"]}
+                              </span>
+                              <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                                {step.materials.length} materi
+                              </span>
+                              <span className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700">
+                                {step.assignments.length} tugas
+                              </span>
+                              <span className="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">
+                                {step.quizzes.length} kuis
+                              </span>
                             </span>
                           </span>
                           <span className="flex shrink-0 items-center gap-2">
@@ -409,13 +536,14 @@ export default async function MahasiswaClassDetailPage({
                         </summary>
 
                         <div className="space-y-4 border-t border-slate-200 bg-slate-50/70 px-4 py-4 sm:ml-6 sm:px-5">
-                          <ActivityHeading
+                          <ActivitySection
                             count={step.materials.length}
+                            defaultOpen={isActiveStep && hasUnreadMaterials}
                             description="Buka file atau tautan di bawah ini sebagai sumber belajar untuk step ini."
                             icon={<BookOpen className="size-4" />}
                             label="Materi"
                             tone="material"
-                          />
+                          >
 
                           {step.materials.length > 0 ? (
                             <div className="grid min-w-0 gap-2 sm:pl-4">
@@ -477,14 +605,16 @@ export default async function MahasiswaClassDetailPage({
                               Belum ada materi untuk step ini.
                             </p>
                           )}
+                          </ActivitySection>
 
-                          <ActivityHeading
+                          <ActivitySection
                             count={step.assignments.length}
+                            defaultOpen={isActiveStep && !hasUnreadMaterials && hasPendingAssignments}
                             description="Kumpulkan laporan atau source code sesuai instruksi dosen."
                             icon={<ClipboardList className="size-4" />}
                             label="Tugas"
                             tone="assignment"
-                          />
+                          >
 
                           {step.assignments.length > 0 ? (
                             <div className="grid gap-3 sm:pl-4">
@@ -566,42 +696,65 @@ export default async function MahasiswaClassDetailPage({
                                         {submission.feedback ? (
                                           <p className="mt-2 leading-6">Feedback: {submission.feedback}</p>
                                         ) : null}
+                                        {submission.plagiarismStatus === "flagged" ? (
+                                          <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-3 text-red-900">
+                                            <p className="inline-flex items-center gap-2 font-semibold">
+                                              <AlertTriangle className="size-4 shrink-0" />
+                                              Submission dikunci sementara
+                                            </p>
+                                            <p className="mt-1 text-xs leading-5">
+                                              Sistem menemukan kemiripan yang perlu ditinjau dosen. Anda belum dapat mengunggah ulang atau melanjutkan modul berikutnya.
+                                            </p>
+                                          </div>
+                                        ) : null}
                                       </div>
                                     ) : null}
 
                                     {canUploadNow ? (
-                                      <form action={submitAssignmentAction} className="mt-4 grid gap-3">
-                                        <input name="assignmentId" type="hidden" value={assignment.id} />
-                                        <label className="block space-y-2">
-                                          <span className="text-sm font-medium text-neutral-700">
-                                            File submission
+                                      <details className="group mt-4 rounded-md border border-indigo-200 bg-indigo-50/70">
+                                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-semibold text-indigo-900 [&::-webkit-details-marker]:hidden">
+                                          <span className="inline-flex items-center gap-2">
+                                            <Upload className="size-4 text-indigo-700" />
+                                            Kumpulkan tugas
                                           </span>
-                                          <input
-                                            accept=".pdf,.zip,.rar,.txt,.md,.js,.ts,.tsx,.jsx,.html,.css,application/pdf,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed,text/plain"
-                                            className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-                                            name="file"
-                                            required
-                                            type="file"
-                                          />
-                                        </label>
-                                        <label className="block space-y-2">
-                                          <span className="text-sm font-medium text-neutral-700">
-                                            Catatan
-                                          </span>
-                                          <textarea
-                                            className="min-h-24 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-                                            name="note"
-                                            placeholder="Catatan singkat untuk dosen."
-                                          />
-                                        </label>
-                                        <button
-                                          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                                          type="submit"
+                                          <ChevronDown className="size-4 text-indigo-700 transition group-open:rotate-180" />
+                                        </summary>
+                                        <form
+                                          action={submitAssignmentAction}
+                                          className="grid gap-3 border-t border-indigo-200 bg-white p-3"
                                         >
-                                          <Upload className="size-4" />
-                                          Kumpulkan tugas
-                                        </button>
-                                      </form>
+                                          <input name="assignmentId" type="hidden" value={assignment.id} />
+                                          <label className="block space-y-2">
+                                            <span className="text-sm font-medium text-neutral-700">
+                                              File submission
+                                            </span>
+                                            <input
+                                              accept=".pdf,.zip,.rar,.txt,.md,.js,.ts,.tsx,.jsx,.html,.css,.json,application/pdf,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed,text/plain"
+                                              className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+                                              name="file"
+                                              required
+                                              type="file"
+                                            />
+                                          </label>
+                                          <label className="block space-y-2">
+                                            <span className="text-sm font-medium text-neutral-700">
+                                              Catatan
+                                            </span>
+                                            <textarea
+                                              className="min-h-24 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+                                              name="note"
+                                              placeholder="Catatan singkat untuk dosen."
+                                            />
+                                          </label>
+                                          <button
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
+                                            type="submit"
+                                          >
+                                            <Upload className="size-4" />
+                                            Kirim submission
+                                          </button>
+                                        </form>
+                                      </details>
                                     ) : (
                                       <p className="mt-4 rounded-md bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
                                         {isPastDue && !submission
@@ -618,14 +771,21 @@ export default async function MahasiswaClassDetailPage({
                               Belum ada tugas untuk step ini.
                             </p>
                           )}
+                          </ActivitySection>
 
-                          <ActivityHeading
+                          <ActivitySection
                             count={step.quizzes.length}
+                            defaultOpen={
+                              isActiveStep &&
+                              !hasUnreadMaterials &&
+                              !hasPendingAssignments &&
+                              hasPendingQuizzes
+                            }
                             description="Kerjakan kuis untuk mendapatkan nilai otomatis. Saat mulai, soal akan diacak dan exam mode akan aktif."
                             icon={<ClipboardList className="size-4" />}
                             label="Kuis"
                             tone="quiz"
-                          />
+                          >
 
                           {step.quizzes.length > 0 ? (
                             <div className="grid gap-3 sm:pl-4">
@@ -712,15 +872,19 @@ export default async function MahasiswaClassDetailPage({
                               Belum ada kuis untuk step ini.
                             </p>
                           )}
+                          </ActivitySection>
                         </div>
                       </details>
-                      ))}
+                        );
+                      })}
                       {moduleItem.finalExam ? (
-                        <FinalExamCard
-                          canStart={moduleItem.completion.readyForFinalExam}
-                          nowMs={nowMs}
-                          quiz={moduleItem.finalExam}
-                        />
+                        <div id={`final-exam-${moduleItem.id}`}>
+                          <FinalExamCard
+                            canStart={moduleItem.completion.readyForFinalExam}
+                            nowMs={nowMs}
+                            quiz={moduleItem.finalExam}
+                          />
+                        </div>
                       ) : (
                         <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-4 text-sm leading-6 text-neutral-600">
                           Final exam modul belum tersedia.
@@ -781,14 +945,18 @@ const activityHeadingStyles = {
   },
 } as const;
 
-function ActivityHeading({
+function ActivitySection({
+  children,
   count,
+  defaultOpen = false,
   description,
   icon,
   label,
   tone,
 }: {
+  children: React.ReactNode;
   count: number;
+  defaultOpen?: boolean;
   description: string;
   icon: React.ReactNode;
   label: string;
@@ -797,18 +965,28 @@ function ActivityHeading({
   const styles = activityHeadingStyles[tone];
 
   return (
-    <div className={`rounded-lg border px-3 py-3 sm:px-4 ${styles.root}`}>
-      <div className="flex items-center gap-2">
-        <span className={`inline-flex size-8 items-center justify-center rounded-md ${styles.icon}`}>
-          {icon}
+    <details className={`group overflow-hidden rounded-lg border ${styles.root}`} open={defaultOpen}>
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-3 sm:px-4 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0">
+          <span className="flex items-center gap-2">
+            <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md ${styles.icon}`}>
+              {icon}
+            </span>
+            <span className="text-xs font-bold uppercase tracking-wide">{label}</span>
+            <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${styles.badge}`}>
+              {count} item
+            </span>
+          </span>
+          <span className="mt-2 block text-sm leading-6 opacity-85">{description}</span>
         </span>
-        <p className="text-xs font-bold uppercase tracking-wide">{label}</p>
-        <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${styles.badge}`}>
-          {count} item
+        <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md ${styles.icon}`}>
+          <ChevronDown className="size-4 transition group-open:rotate-180" />
         </span>
+      </summary>
+      <div className="space-y-3 border-t border-current/10 bg-white/70 px-3 py-3 sm:px-4">
+        {children}
       </div>
-      <p className="mt-2 text-sm leading-6 opacity-85">{description}</p>
-    </div>
+    </details>
   );
 }
 

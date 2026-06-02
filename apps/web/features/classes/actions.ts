@@ -31,6 +31,8 @@ import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "@/lib/validators";
 import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
+import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
+import { gradeWeightsTotal } from "@/features/grades/class-score";
 
 const classStatusSchema = z.enum(["draft", "published", "archived"]);
 const materialTypeSchema = z.enum(["pdf", "video", "slide", "link"]);
@@ -154,6 +156,19 @@ async function requireStudentMaterial(materialId: string, studentId: string) {
     redirect("/mahasiswa/dashboard?error=material_not_found");
   }
 
+  if (
+    await hasPriorFlaggedSubmission({
+      classId: material.classId,
+      moduleId: material.moduleId,
+      studentId,
+    })
+  ) {
+    redirect(
+      getMahasiswaClassPath({ id: material.classId, title: material.classTitle }) +
+        "?error=plagiarism_module_locked",
+    );
+  }
+
   return material;
 }
 
@@ -214,12 +229,19 @@ export async function updateClassAction(formData: FormData) {
       title: z.string().trim().min(3).max(120),
       description: textField,
       status: classStatusSchema,
+      assignmentWeight: z.coerce.number().int().min(0).max(100),
+      quizWeight: z.coerce.number().int().min(0).max(100),
+      finalExamWeight: z.coerce.number().int().min(0).max(100),
     })
+    .refine((value) => gradeWeightsTotal(value) === 100)
     .safeParse({
       classId: formData.get("classId"),
       title: formData.get("title"),
       description: formData.get("description"),
       status: formData.get("status"),
+      assignmentWeight: formData.get("assignmentWeight"),
+      quizWeight: formData.get("quizWeight"),
+      finalExamWeight: formData.get("finalExamWeight"),
     });
 
   if (!parsed.success) {
@@ -234,6 +256,9 @@ export async function updateClassAction(formData: FormData) {
       title: parsed.data.title,
       description: parsed.data.description,
       status: parsed.data.status,
+      assignmentWeight: parsed.data.assignmentWeight,
+      quizWeight: parsed.data.quizWeight,
+      finalExamWeight: parsed.data.finalExamWeight,
       publishedAt: parsed.data.status === "published" ? new Date() : null,
       updatedAt: new Date(),
     })
@@ -244,6 +269,11 @@ export async function updateClassAction(formData: FormData) {
     entityType: "classes",
     entityId: parsed.data.classId,
     metadata: {
+      grade_weights: {
+        assignment: parsed.data.assignmentWeight,
+        final_exam: parsed.data.finalExamWeight,
+        quiz: parsed.data.quizWeight,
+      },
       title: parsed.data.title,
       status: parsed.data.status,
     },
@@ -264,8 +294,13 @@ export async function deleteClassAction(formData: FormData) {
     redirect("/dosen/dashboard?error=invalid_class");
   }
 
-  await requireOwnedClass(parsed.data.classId, profile.id);
-  await db.delete(classes).where(eq(classes.id, parsed.data.classId));
+  const classItem = await requireOwnedClass(parsed.data.classId, profile.id);
+
+  try {
+    await db.delete(classes).where(eq(classes.id, parsed.data.classId));
+  } catch {
+    redirect(getDosenClassSettingsPath(classItem) + "?error=class_delete_failed");
+  }
 
   await writeAuditLog({
     action: "classes.deleted",

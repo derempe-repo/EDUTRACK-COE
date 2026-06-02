@@ -12,6 +12,7 @@ const errorMessages = {
   email_rate_limit: "Batas pengiriman email konfirmasi Supabase sedang tercapai. Tunggu beberapa menit atau matikan email confirmation untuk testing.",
   invalid_input: "Nama, email, dan password wajib valid. Password minimal 8 karakter dan konfirmasi harus sama.",
   invalid_email_address: "Alamat email tidak diterima oleh Supabase. Gunakan email asli yang valid.",
+  registration_disabled: "Registrasi mahasiswa baru sedang dinonaktifkan oleh pengelola sistem.",
   register_failed: "Registrasi belum berhasil. Coba gunakan email lain atau ulangi beberapa saat lagi.",
 } as const;
 
