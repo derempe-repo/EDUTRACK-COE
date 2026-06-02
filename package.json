@@ -1,0 +1,29 @@
+{
+  "name": "project-lms",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=24.15.0 <25",
+    "pnpm": ">=11.3.0 <12"
+  },
+  "scripts": {
+    "dev": "corepack pnpm --filter web dev",
+    "build": "corepack pnpm --filter web build",
+    "start": "corepack pnpm --filter web start",
+    "lint": "corepack pnpm --filter web lint",
+    "typecheck": "corepack pnpm --filter web typecheck",
+    "test": "corepack pnpm --filter web test",
+    "test:e2e": "corepack pnpm --filter web test:e2e",
+    "db:generate": "corepack pnpm --filter web db:generate",
+    "db:migrate": "corepack pnpm --filter web db:migrate",
+    "db:studio": "corepack pnpm --filter web db:studio",
+    "db:push": "corepack pnpm --filter web db:push",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status"
+  },
+  "devDependencies": {
+    "supabase": "2.101.0"
+  }
+}

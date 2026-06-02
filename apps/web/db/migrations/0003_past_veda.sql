@@ -1,0 +1,1 @@
+CREATE INDEX "materials_created_by_idx" ON "materials" USING btree ("created_by");
