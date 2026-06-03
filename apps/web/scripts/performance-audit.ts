@@ -1,14 +1,16 @@
 import dotenv from "dotenv";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 
-import { classes, classMembers, modules, profiles } from "../db/schema";
+import { assignments, classes, classMembers, modules, moduleSteps, profiles, quizzes } from "../db/schema";
 import { getAdminUsersData, getAuditLogData, getMonitoringData } from "../features/admin/data";
 import {
   getAdminDashboardData,
+  getDosenAssignmentSubmissionsDetail,
   getDosenClassDetail,
   getDosenDashboardData,
   getDosenModuleAssignmentsDetail,
   getDosenModuleDetail,
+  getDosenQuizAttemptsDetail,
   getMahasiswaClassDetail,
   getMahasiswaDashboardData,
   getSuperAdminDashboardData,
@@ -82,6 +84,36 @@ async function main() {
           label: "dosen.moduleAssignments",
           run: () => getDosenModuleAssignmentsDetail(lecturerId, classId, moduleId),
         });
+
+        const assignmentRows = await db
+          .select({ id: assignments.id })
+          .from(assignments)
+          .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
+          .where(eq(moduleSteps.moduleId, moduleId))
+          .limit(1);
+        const assignmentId = assignmentRows[0]?.id;
+
+        if (assignmentId) {
+          items.push({
+            label: "dosen.assignmentSubmissions",
+            run: () => getDosenAssignmentSubmissionsDetail(lecturerId, classId, moduleId, assignmentId),
+          });
+        }
+
+        const quizRows = await db
+          .select({ id: quizzes.id })
+          .from(quizzes)
+          .leftJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
+          .where(or(eq(quizzes.moduleId, moduleId), eq(moduleSteps.moduleId, moduleId)))
+          .limit(1);
+        const quizId = quizRows[0]?.id;
+
+        if (quizId) {
+          items.push({
+            label: "dosen.quizAttempts",
+            run: () => getDosenQuizAttemptsDetail(lecturerId, classId, moduleId, quizId),
+          });
+        }
       }
     }
   }

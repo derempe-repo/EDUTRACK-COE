@@ -509,6 +509,7 @@ export const quizAttempts = pgTable(
     index("quiz_attempts_quiz_id_idx").on(table.quizId),
     index("quiz_attempts_quiz_started_at_idx").on(table.quizId, table.startedAt),
     index("quiz_attempts_student_id_idx").on(table.studentId),
+    index("quiz_attempts_student_quiz_started_at_idx").on(table.studentId, table.quizId, table.startedAt),
     index("quiz_attempts_student_started_at_idx").on(table.studentId, table.startedAt),
     index("quiz_attempts_status_idx").on(table.status),
   ],

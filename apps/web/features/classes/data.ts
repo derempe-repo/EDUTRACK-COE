@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { max } from "drizzle-orm/sql/functions/aggregate";
 
 import {
   assignments,
@@ -1543,6 +1544,45 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
       .where(and(eq(moduleProgress.classId, classId), eq(moduleProgress.studentId, studentId))),
   ]);
 
+  const latestStepAttempts = db
+    .select({
+      quizId: quizAttempts.quizId,
+      latestStartedAt: max(quizAttempts.startedAt).as("latest_started_at"),
+    })
+    .from(quizAttempts)
+    .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
+    .innerJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
+    .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
+    .where(
+      and(
+        eq(modules.classId, classId),
+        eq(modules.isLocked, false),
+        eq(quizzes.quizType, "step"),
+        eq(quizAttempts.studentId, studentId),
+      ),
+    )
+    .groupBy(quizAttempts.quizId)
+    .as("latest_step_attempts");
+
+  const latestFinalAttempts = db
+    .select({
+      quizId: quizAttempts.quizId,
+      latestStartedAt: max(quizAttempts.startedAt).as("latest_started_at"),
+    })
+    .from(quizAttempts)
+    .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
+    .innerJoin(modules, eq(modules.id, quizzes.moduleId))
+    .where(
+      and(
+        eq(modules.classId, classId),
+        eq(modules.isLocked, false),
+        eq(quizzes.quizType, "final"),
+        eq(quizAttempts.studentId, studentId),
+      ),
+    )
+    .groupBy(quizAttempts.quizId)
+    .as("latest_final_attempts");
+
   const [quizRows, finalExamRows, quizAttemptRows, finalAttemptRows, certificateRows] = await Promise.all([
     db
       .select({
@@ -1603,6 +1643,13 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
         submittedAt: quizAttempts.submittedAt,
       })
       .from(quizAttempts)
+      .innerJoin(
+        latestStepAttempts,
+        and(
+          eq(latestStepAttempts.quizId, quizAttempts.quizId),
+          eq(latestStepAttempts.latestStartedAt, quizAttempts.startedAt),
+        ),
+      )
       .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
       .innerJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
       .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
@@ -1613,8 +1660,7 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
           eq(quizzes.quizType, "step"),
           eq(quizAttempts.studentId, studentId),
         ),
-      )
-      .orderBy(desc(quizAttempts.startedAt)),
+      ),
     db
       .select({
         id: quizAttempts.id,
@@ -1627,6 +1673,13 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
         submittedAt: quizAttempts.submittedAt,
       })
       .from(quizAttempts)
+      .innerJoin(
+        latestFinalAttempts,
+        and(
+          eq(latestFinalAttempts.quizId, quizAttempts.quizId),
+          eq(latestFinalAttempts.latestStartedAt, quizAttempts.startedAt),
+        ),
+      )
       .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
       .innerJoin(modules, eq(modules.id, quizzes.moduleId))
       .where(
@@ -1636,8 +1689,7 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
           eq(quizzes.quizType, "final"),
           eq(quizAttempts.studentId, studentId),
         ),
-      )
-      .orderBy(desc(quizAttempts.startedAt)),
+      ),
     db
       .select({
         id: certificates.id,
