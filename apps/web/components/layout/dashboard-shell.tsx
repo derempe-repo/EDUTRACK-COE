@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
+import { AdminDashboardShell } from "@/components/layout/admin-dashboard-shell";
 import { DosenDashboardShell } from "@/components/layout/dosen-dashboard-shell";
 import { StudentDashboardShell } from "@/components/layout/student-dashboard-shell";
-import { AdminDashboardShell } from "@/components/layout/admin-dashboard-shell";
 import { getUnreadNotificationCount } from "@/features/notifications/data";
 import type { AppProfile } from "@/lib/auth";
 
@@ -13,6 +13,14 @@ type DashboardShellProps = {
 };
 
 export async function DashboardShell({ profile, title, children }: DashboardShellProps) {
+  if (profile.role === "admin" || profile.role === "super_admin") {
+    return (
+      <AdminDashboardShell profile={profile} title={title}>
+        {children}
+      </AdminDashboardShell>
+    );
+  }
+
   const unreadNotificationCount = await getUnreadNotificationCount(profile.id);
 
   if (profile.role === "mahasiswa") {
@@ -38,14 +46,4 @@ export async function DashboardShell({ profile, title, children }: DashboardShel
       </DosenDashboardShell>
     );
   }
-
-  return (
-    <AdminDashboardShell
-      profile={profile}
-      title={title}
-      unreadNotificationCount={unreadNotificationCount}
-    >
-      {children}
-    </AdminDashboardShell>
-  );
 }

@@ -1,4 +1,4 @@
-import { Bell, BookOpen, LogOut } from "lucide-react";
+import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -6,6 +6,11 @@ import {
   AdminDesktopNavigation,
   AdminMobileNavigation,
 } from "@/components/layout/admin-navigation";
+import {
+  getProfileInitials,
+  getRoleLabel,
+  UserProfileBadge,
+} from "@/components/layout/user-profile-badge";
 import { logoutAction } from "@/features/auth/actions";
 import { getAdminBasePath } from "@/features/admin/urls";
 import type { AppProfile } from "@/lib/auth";
@@ -14,17 +19,15 @@ type AdminDashboardShellProps = {
   children: ReactNode;
   profile: AppProfile;
   title: string;
-  unreadNotificationCount: number;
 };
 
 export function AdminDashboardShell({
   children,
   profile,
   title,
-  unreadNotificationCount,
 }: AdminDashboardShellProps) {
   const basePath = getAdminBasePath(profile.role);
-  const roleLabel = profile.role === "super_admin" ? "Super Admin" : "Admin";
+  const roleLabel = getRoleLabel(profile.role);
 
   return (
     <div className="min-h-screen bg-[#f5f7f8] text-[#123044]">
@@ -47,7 +50,7 @@ export function AdminDashboardShell({
         <div className="mt-auto border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
             <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold">
-              {getInitials(profile.name)}
+              {getProfileInitials(profile.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{profile.name}</p>
@@ -82,18 +85,9 @@ export function AdminDashboardShell({
                 <p className="truncate text-[10px] text-slate-500">{roleLabel}</p>
               </div>
             </Link>
-            <Link
-              className="relative ml-auto inline-flex size-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-teal-300 hover:text-teal-700"
-              href="/notifications"
-              title={unreadNotificationCount > 0 ? `${unreadNotificationCount} notifikasi belum dibaca` : "Notifikasi"}
-            >
-              <Bell className="size-4" />
-              {unreadNotificationCount > 0 ? (
-                <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 px-1 py-0.5 text-[10px] font-bold leading-none text-white">
-                  {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
-                </span>
-              ) : null}
-            </Link>
+            <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+              <UserProfileBadge profile={profile} roleLabel={roleLabel} />
+            </div>
           </div>
         </header>
 
@@ -105,14 +99,4 @@ export function AdminDashboardShell({
       <AdminMobileNavigation basePath={basePath} />
     </div>
   );
-}
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
 }

@@ -32,6 +32,9 @@ type CountRow = {
   value: number;
 };
 
+const RECENT_QUIZ_ATTEMPT_LIMIT = 120;
+const RECENT_EXAM_EVENT_LIMIT = 300;
+
 function toCountMap(rows: CountRow[]) {
   return new Map(rows.map((row) => [row.id, Number(row.value)]));
 }
@@ -171,7 +174,7 @@ export async function getDosenClassDetail(lecturerId: string, classId: string) {
     return null;
   }
 
-  const [memberRows, moduleRows, stepRows, materialRows, certificateRows, exportRows] = await Promise.all([
+  const [memberRows, moduleRows, stepRows] = await Promise.all([
     db
       .select({
         id: classMembers.id,
@@ -204,6 +207,9 @@ export async function getDosenClassDetail(lecturerId: string, classId: string) {
       .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
       .where(eq(modules.classId, classId))
       .orderBy(asc(moduleSteps.sortOrder), asc(moduleSteps.createdAt)),
+  ]);
+
+  const [materialRows, certificateRows, exportRows] = await Promise.all([
     db
       .select({
         id: materials.id,
@@ -315,18 +321,7 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
     return null;
   }
 
-  const [
-    stepRows,
-    materialRows,
-    assignmentRows,
-    submissionRows,
-    quizRows,
-    finalExamRows,
-    questionRows,
-    optionRows,
-    quizAttemptRows,
-    finalAttemptRows,
-  ] = await Promise.all([
+  const [stepRows, materialRows, assignmentRows, submissionRows] = await Promise.all([
     db
       .select({
         id: moduleSteps.id,
@@ -403,6 +398,9 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
       .leftJoin(plagiarismChecks, eq(plagiarismChecks.submissionId, submissions.id))
       .where(eq(moduleSteps.moduleId, moduleId))
       .orderBy(desc(submissions.submittedAt)),
+  ]);
+
+  const [quizRows, finalExamRows, questionRows, optionRows] = await Promise.all([
     db
       .select({
         id: quizzes.id,
@@ -467,6 +465,9 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
       .innerJoin(moduleSteps, eq(moduleSteps.id, questions.moduleStepId))
       .where(eq(moduleSteps.moduleId, moduleId))
       .orderBy(asc(questionOptions.sortOrder)),
+  ]);
+
+  const [quizAttemptRows, finalAttemptRows] = await Promise.all([
     db
       .select({
         id: quizAttempts.id,
@@ -489,7 +490,8 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
           eq(quizzes.quizType, "step"),
         ),
       )
-      .orderBy(desc(quizAttempts.startedAt)),
+      .orderBy(desc(quizAttempts.startedAt))
+      .limit(RECENT_QUIZ_ATTEMPT_LIMIT),
     db
       .select({
         id: quizAttempts.id,
@@ -506,7 +508,8 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
       .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
       .innerJoin(profiles, eq(profiles.id, quizAttempts.studentId))
       .where(and(eq(quizzes.moduleId, moduleId), eq(quizzes.quizType, "final")))
-      .orderBy(desc(quizAttempts.startedAt)),
+      .orderBy(desc(quizAttempts.startedAt))
+      .limit(RECENT_QUIZ_ATTEMPT_LIMIT),
   ]);
 
   const materialsByStep = new Map<string, typeof materialRows>();
@@ -530,6 +533,7 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
           .from(examModeEvents)
           .where(inArray(examModeEvents.attemptId, allAttemptIds))
           .orderBy(desc(examModeEvents.createdAt))
+          .limit(RECENT_EXAM_EVENT_LIMIT)
       : [];
   const eventsByAttempt = new Map<string, typeof examEventRows>();
   for (const event of examEventRows) {
@@ -930,18 +934,34 @@ export async function getMahasiswaDashboardData(studentId: string) {
       .limit(5),
   ]);
 
-  const [
-    activeModules,
-    materialRows,
-    materialReadRows,
-    assignmentRows,
-    acceptedSubmissionRows,
-    quizRows,
-    quizAttemptRows,
-    gradeRows,
-  ] =
-    classIds.length > 0
-      ? await Promise.all([
+  let activeModules: Array<{
+    classId: string;
+    classTitle: string;
+    description: string | null;
+    id: string;
+    isLocked: boolean;
+    title: string;
+  }> = [];
+  let materialRows: Array<{ classId: string; id: string }> = [];
+  let materialReadRows: Array<{ classId: string; materialId: string }> = [];
+  let assignmentRows: Array<{ classId: string; id: string }> = [];
+  let acceptedSubmissionRows: Array<{
+    assignmentId: string;
+    classId: string;
+    maxScore: number;
+    score: number | null;
+  }> = [];
+  let quizRows: Array<{ classId: string; id: string; passingScore: number }> = [];
+  let quizAttemptRows: Array<{
+    classId: string;
+    quizId: string;
+    score: number | null;
+    status: "started" | "submitted" | "reset" | "expired";
+  }> = [];
+  let gradeRows: Array<{ classId: string; maxScore: number; score: number; sourceType: string }> = [];
+
+  if (classIds.length > 0) {
+    [activeModules, materialRows, materialReadRows, assignmentRows] = await Promise.all([
           db
             .select({
               id: modules.id,
@@ -992,76 +1012,79 @@ export async function getMahasiswaDashboardData(studentId: string) {
                 eq(assignments.isActive, true),
               ),
             ),
-          db
-            .select({
-              assignmentId: submissions.assignmentId,
-              classId: modules.classId,
-              maxScore: assignments.maxScore,
-              score: submissions.score,
-            })
-            .from(submissions)
-            .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
-            .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
-            .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
-            .where(
-              and(
-                inArray(modules.classId, classIds),
-                eq(modules.isLocked, false),
-                eq(submissions.studentId, studentId),
-                eq(submissions.status, "accepted"),
-              ),
-            ),
-          db
-            .select({
-              classId: modules.classId,
-              id: quizzes.id,
-              passingScore: quizzes.passingScore,
-            })
-            .from(quizzes)
-            .leftJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
-            .innerJoin(
-              modules,
-              sql`${modules.id} = coalesce(${moduleSteps.moduleId}, ${quizzes.moduleId})`,
-            )
-            .where(
-              and(
-                inArray(modules.classId, classIds),
-                eq(modules.isLocked, false),
-                eq(quizzes.isActive, true),
-              ),
-            ),
-          db
-            .select({
-              classId: modules.classId,
-              quizId: quizAttempts.quizId,
-              score: quizAttempts.score,
-              status: quizAttempts.status,
-            })
-            .from(quizAttempts)
-            .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
-            .leftJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
-            .innerJoin(
-              modules,
-              sql`${modules.id} = coalesce(${moduleSteps.moduleId}, ${quizzes.moduleId})`,
-            )
-            .where(
-              and(
-                inArray(modules.classId, classIds),
-                eq(modules.isLocked, false),
-                eq(quizAttempts.studentId, studentId),
-              ),
-            ),
-          db
-            .select({
-              classId: grades.classId,
-              maxScore: grades.maxScore,
-              score: grades.score,
-              sourceType: grades.sourceType,
-            })
-            .from(grades)
-            .where(eq(grades.studentId, studentId)),
-        ])
-      : [[], [], [], [], [], [], [], []];
+    ]);
+
+    [acceptedSubmissionRows, quizRows, quizAttemptRows, gradeRows] = await Promise.all([
+      db
+        .select({
+          assignmentId: submissions.assignmentId,
+          classId: modules.classId,
+          maxScore: assignments.maxScore,
+          score: submissions.score,
+        })
+        .from(submissions)
+        .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
+        .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
+        .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
+        .where(
+          and(
+            inArray(modules.classId, classIds),
+            eq(modules.isLocked, false),
+            eq(submissions.studentId, studentId),
+            eq(submissions.status, "accepted"),
+          ),
+        ),
+      db
+        .select({
+          classId: modules.classId,
+          id: quizzes.id,
+          passingScore: quizzes.passingScore,
+        })
+        .from(quizzes)
+        .leftJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
+        .innerJoin(
+          modules,
+          sql`${modules.id} = coalesce(${moduleSteps.moduleId}, ${quizzes.moduleId})`,
+        )
+        .where(
+          and(
+            inArray(modules.classId, classIds),
+            eq(modules.isLocked, false),
+            eq(quizzes.isActive, true),
+          ),
+        ),
+      db
+        .select({
+          classId: modules.classId,
+          quizId: quizAttempts.quizId,
+          score: quizAttempts.score,
+          status: quizAttempts.status,
+        })
+        .from(quizAttempts)
+        .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
+        .leftJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
+        .innerJoin(
+          modules,
+          sql`${modules.id} = coalesce(${moduleSteps.moduleId}, ${quizzes.moduleId})`,
+        )
+        .where(
+          and(
+            inArray(modules.classId, classIds),
+            eq(modules.isLocked, false),
+            eq(quizAttempts.studentId, studentId),
+          ),
+        ),
+      db
+        .select({
+          classId: grades.classId,
+          maxScore: grades.maxScore,
+          score: grades.score,
+          sourceType: grades.sourceType,
+        })
+        .from(grades)
+        .where(eq(grades.studentId, studentId)),
+    ]);
+  }
 
   const progressByClass = new Map<
     string,
@@ -1220,20 +1243,7 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
     return null;
   }
 
-  const [
-    moduleRows,
-    stepRows,
-    materialRows,
-    materialReadRows,
-    assignmentRows,
-    submissionRows,
-    progressRows,
-    quizRows,
-    finalExamRows,
-    quizAttemptRows,
-    finalAttemptRows,
-    certificateRows,
-  ] = await Promise.all([
+  const [moduleRows, stepRows, materialRows, materialReadRows] = await Promise.all([
     db
       .select({
         id: modules.id,
@@ -1294,6 +1304,9 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
           eq(materialReads.studentId, studentId),
         ),
       ),
+  ]);
+
+  const [assignmentRows, submissionRows, progressRows] = await Promise.all([
     db
       .select({
         id: assignments.id,
@@ -1354,6 +1367,9 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
       })
       .from(moduleProgress)
       .where(and(eq(moduleProgress.classId, classId), eq(moduleProgress.studentId, studentId))),
+  ]);
+
+  const [quizRows, finalExamRows, quizAttemptRows, finalAttemptRows, certificateRows] = await Promise.all([
     db
       .select({
         id: quizzes.id,

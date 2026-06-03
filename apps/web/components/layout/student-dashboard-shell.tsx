@@ -1,4 +1,4 @@
-import { Bell, BookOpen, LogOut } from "lucide-react";
+import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -6,6 +6,7 @@ import {
   StudentDesktopNavigation,
   StudentMobileNavigation,
 } from "@/components/layout/student-navigation";
+import { getProfileInitials, UserProfileBadge } from "@/components/layout/user-profile-badge";
 import { logoutAction } from "@/features/auth/actions";
 import type { AppProfile } from "@/lib/auth";
 
@@ -15,33 +16,6 @@ type StudentDashboardShellProps = {
   title: string;
   unreadNotificationCount: number;
 };
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
-function NotificationButton({ count }: { count: number }) {
-  return (
-    <Link
-      className="relative inline-flex size-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-teal-300 hover:text-teal-700"
-      href="/notifications"
-      title={count > 0 ? `${count} notifikasi belum dibaca` : "Notifikasi"}
-    >
-      <Bell className="size-4" />
-      {count > 0 ? (
-        <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 px-1 py-0.5 text-[10px] font-bold leading-none text-white">
-          {count > 99 ? "99+" : count}
-        </span>
-      ) : null}
-    </Link>
-  );
-}
 
 export function StudentDashboardShell({
   children,
@@ -70,7 +44,7 @@ export function StudentDashboardShell({
         <div className="mt-auto border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
             <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
-              {getInitials(profile.name)}
+              {getProfileInitials(profile.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">{profile.name}</p>
@@ -109,8 +83,8 @@ export function StudentDashboardShell({
               </div>
             </Link>
 
-            <div className="ml-auto flex items-center gap-3 lg:hidden">
-              <NotificationButton count={unreadNotificationCount} />
+            <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+              <UserProfileBadge profile={profile} />
             </div>
           </div>
         </header>

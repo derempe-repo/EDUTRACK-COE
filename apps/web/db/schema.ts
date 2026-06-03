@@ -321,8 +321,10 @@ export const submissions = pgTable(
   (table) => [
     uniqueIndex("submissions_assignment_student_unique").on(table.assignmentId, table.studentId),
     index("submissions_assignment_id_idx").on(table.assignmentId),
+    index("submissions_assignment_submitted_at_idx").on(table.assignmentId, table.submittedAt),
     index("submissions_student_id_idx").on(table.studentId),
     index("submissions_status_idx").on(table.status),
+    index("submissions_plagiarism_status_idx").on(table.plagiarismStatus),
     index("submissions_reviewed_by_idx").on(table.reviewedBy),
   ],
 );
@@ -346,6 +348,7 @@ export const plagiarismChecks = pgTable(
   (table) => [
     uniqueIndex("plagiarism_checks_submission_id_unique").on(table.submissionId),
     index("plagiarism_checks_status_idx").on(table.status),
+    index("plagiarism_checks_status_checked_at_idx").on(table.status, table.checkedAt),
     index("plagiarism_checks_similarity_score_idx").on(table.similarityScore),
     index("plagiarism_checks_checked_at_idx").on(table.checkedAt),
   ],
@@ -502,7 +505,9 @@ export const quizAttempts = pgTable(
   },
   (table) => [
     index("quiz_attempts_quiz_id_idx").on(table.quizId),
+    index("quiz_attempts_quiz_started_at_idx").on(table.quizId, table.startedAt),
     index("quiz_attempts_student_id_idx").on(table.studentId),
+    index("quiz_attempts_student_started_at_idx").on(table.studentId, table.startedAt),
     index("quiz_attempts_status_idx").on(table.status),
   ],
 );
@@ -590,8 +595,10 @@ export const examModeEvents = pgTable(
   },
   (table) => [
     index("exam_mode_events_attempt_id_idx").on(table.attemptId),
+    index("exam_mode_events_attempt_created_at_idx").on(table.attemptId, table.createdAt),
     index("exam_mode_events_student_id_idx").on(table.studentId),
     index("exam_mode_events_event_type_idx").on(table.eventType),
+    index("exam_mode_events_created_at_idx").on(table.createdAt),
   ],
 );
 
@@ -651,6 +658,7 @@ export const certificates = pgTable(
     uniqueIndex("certificates_verification_token_unique")
       .on(table.verificationToken)
       .where(sql`${table.verificationToken} is not null`),
+    index("certificates_class_id_idx").on(table.classId),
     index("certificates_student_id_idx").on(table.studentId),
     index("certificates_status_idx").on(table.status),
   ],
@@ -695,6 +703,7 @@ export const exports = pgTable(
   },
   (table) => [
     index("exports_class_id_idx").on(table.classId),
+    index("exports_class_created_at_idx").on(table.classId, table.createdAt),
     index("exports_requested_by_idx").on(table.requestedBy),
     index("exports_status_idx").on(table.status),
     index("exports_created_at_idx").on(table.createdAt),

@@ -147,56 +147,49 @@ export async function getSystemSettingsData() {
 
 export async function getMonitoringData() {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [
-    auditCount,
-    classStatusRows,
-    failedExports,
-    flaggedReviews,
-    flaggedSubmissions,
-    recentAuditLogs,
-    roleRows,
-    startedQuizAttempts,
-    unreadNotifications,
-    warningEvents,
-  ] = await Promise.all([
+
+  const [auditCount, failedExports, flaggedSubmissions] = await Promise.all([
     db
       .select({ value: sql<number>`count(*)::int` })
       .from(auditLogs)
       .where(gte(auditLogs.createdAt, since)),
     db
-      .select({ status: classes.status, value: sql<number>`count(*)::int` })
-      .from(classes)
-      .groupBy(classes.status),
-    db
       .select({ value: sql<number>`count(*)::int` })
       .from(exports)
       .where(eq(exports.status, "failed")),
     db
-      .select({
-        assignmentTitle: assignments.title,
-        checkedAt: plagiarismChecks.checkedAt,
-        classTitle: classes.title,
-        fileName: submissions.fileName,
-        similarityScore: plagiarismChecks.similarityScore,
-        studentEmail: profiles.email,
-        studentName: profiles.name,
-        submissionId: submissions.id,
-        thresholdPercent: plagiarismChecks.thresholdPercent,
-      })
-      .from(plagiarismChecks)
-      .innerJoin(submissions, eq(submissions.id, plagiarismChecks.submissionId))
-      .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
-      .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
-      .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
-      .innerJoin(classes, eq(classes.id, modules.classId))
-      .innerJoin(profiles, eq(profiles.id, submissions.studentId))
-      .where(eq(plagiarismChecks.status, "flagged"))
-      .orderBy(desc(plagiarismChecks.checkedAt))
-      .limit(20),
-    db
       .select({ value: sql<number>`count(*)::int` })
       .from(submissions)
       .where(eq(submissions.plagiarismStatus, "flagged")),
+  ]);
+  const [startedQuizAttempts, unreadNotifications, warningEvents] = await Promise.all([
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(quizAttempts)
+      .where(eq(quizAttempts.status, "started")),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(eq(notifications.status, "unread")),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(examModeEvents)
+      .where(gte(examModeEvents.createdAt, since)),
+  ]);
+  const stats = {
+    auditEvents24Hours: Number(auditCount[0]?.value ?? 0),
+    failedExports: Number(failedExports[0]?.value ?? 0),
+    flaggedSubmissions: Number(flaggedSubmissions[0]?.value ?? 0),
+    startedQuizAttempts: Number(startedQuizAttempts[0]?.value ?? 0),
+    unreadNotifications: Number(unreadNotifications[0]?.value ?? 0),
+    warningEvents24Hours: Number(warningEvents[0]?.value ?? 0),
+  };
+
+  const [classStatusRows, recentAuditLogs, roleRows] = await Promise.all([
+    db
+      .select({ status: classes.status, value: sql<number>`count(*)::int` })
+      .from(classes)
+      .groupBy(classes.status),
     db
       .select({
         action: auditLogs.action,
@@ -211,19 +204,32 @@ export async function getMonitoringData() {
       .select({ role: profiles.role, value: sql<number>`count(*)::int` })
       .from(profiles)
       .groupBy(profiles.role),
-    db
-      .select({ value: sql<number>`count(*)::int` })
-      .from(quizAttempts)
-      .where(eq(quizAttempts.status, "started")),
-    db
-      .select({ value: sql<number>`count(*)::int` })
-      .from(notifications)
-      .where(eq(notifications.status, "unread")),
-    db
-      .select({ value: sql<number>`count(*)::int` })
-      .from(examModeEvents)
-      .where(gte(examModeEvents.createdAt, since)),
   ]);
+  const flaggedReviews =
+    Number(stats.flaggedSubmissions) > 0
+      ? await db
+          .select({
+            assignmentTitle: assignments.title,
+            checkedAt: plagiarismChecks.checkedAt,
+            classTitle: classes.title,
+            fileName: submissions.fileName,
+            similarityScore: plagiarismChecks.similarityScore,
+            studentEmail: profiles.email,
+            studentName: profiles.name,
+            submissionId: submissions.id,
+            thresholdPercent: plagiarismChecks.thresholdPercent,
+          })
+          .from(plagiarismChecks)
+          .innerJoin(submissions, eq(submissions.id, plagiarismChecks.submissionId))
+          .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
+          .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
+          .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
+          .innerJoin(classes, eq(classes.id, modules.classId))
+          .innerJoin(profiles, eq(profiles.id, submissions.studentId))
+          .where(eq(plagiarismChecks.status, "flagged"))
+          .orderBy(desc(plagiarismChecks.checkedAt))
+          .limit(20)
+      : [];
 
   return {
     classStatuses: Object.fromEntries(classStatusRows.map((item) => [item.status, Number(item.value)])),
@@ -231,12 +237,12 @@ export async function getMonitoringData() {
     recentAuditLogs,
     roles: Object.fromEntries(roleRows.map((item) => [item.role, Number(item.value)])),
     stats: {
-      auditEvents24Hours: Number(auditCount[0]?.value ?? 0),
-      failedExports: Number(failedExports[0]?.value ?? 0),
-      flaggedSubmissions: Number(flaggedSubmissions[0]?.value ?? 0),
-      startedQuizAttempts: Number(startedQuizAttempts[0]?.value ?? 0),
-      unreadNotifications: Number(unreadNotifications[0]?.value ?? 0),
-      warningEvents24Hours: Number(warningEvents[0]?.value ?? 0),
+      auditEvents24Hours: stats.auditEvents24Hours,
+      failedExports: stats.failedExports,
+      flaggedSubmissions: stats.flaggedSubmissions,
+      startedQuizAttempts: stats.startedQuizAttempts,
+      unreadNotifications: stats.unreadNotifications,
+      warningEvents24Hours: stats.warningEvents24Hours,
     },
   };
 }
