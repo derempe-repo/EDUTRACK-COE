@@ -141,6 +141,13 @@
       "when": 1780405894040,
       "tag": "0019_fix_class_delete_quiz_attempt_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1780449109407,
+      "tag": "0020_add_file_material_type",
+      "breakpoints": true
     }
   ]
 }

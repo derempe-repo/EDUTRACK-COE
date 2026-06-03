@@ -1,9 +1,8 @@
 import { sanitizeStorageFileName } from "../classes/material-storage";
+import { isAllowedLmsFile } from "../files/lms-file-types";
 
-export const ASSIGNMENT_ATTACHMENT_FILE_SIZE_LIMIT = 10 * 1024 * 1024;
+export const ASSIGNMENT_ATTACHMENT_FILE_SIZE_LIMIT = 25 * 1024 * 1024;
 export const ASSIGNMENT_ATTACHMENTS_BUCKET = "materials";
-
-const allowedMimeTypes = new Set(["application/pdf"]);
 
 export function buildAssignmentAttachmentStoragePath({
   classId,
@@ -25,11 +24,11 @@ export function validateAssignmentAttachmentFile(file: File) {
   }
 
   if (file.size > ASSIGNMENT_ATTACHMENT_FILE_SIZE_LIMIT) {
-    return "Ukuran file tugas maksimal 10 MB.";
+    return "Ukuran file tugas maksimal 25 MB.";
   }
 
-  if (!allowedMimeTypes.has(file.type) && !file.name.toLowerCase().endsWith(".pdf")) {
-    return "Lampiran tugas harus berupa PDF.";
+  if (!isAllowedLmsFile(file)) {
+    return "Format lampiran tugas belum didukung.";
   }
 
   return null;

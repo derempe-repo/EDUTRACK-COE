@@ -361,9 +361,12 @@ export default async function DosenModuleQuizzesPage({
                                   </button>
                                 </form>
 
-                                <AttemptList attempts={quiz.attempts} />
                               </div>
                             </details>
+
+                            <div className="mt-3">
+                              <AttemptList attempts={quiz.attempts} />
+                            </div>
                           </article>
                         ))}
                       </div>

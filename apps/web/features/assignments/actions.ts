@@ -26,6 +26,7 @@ import {
   SUBMISSIONS_BUCKET,
   validateSubmissionFile,
 } from "@/features/assignments/submission-storage";
+import { getUploadContentType } from "@/features/files/lms-file-types";
 import {
   getDosenModuleAssignmentsPath,
   getMahasiswaClassPath,
@@ -314,7 +315,7 @@ export async function createAssignmentAction(formData: FormData) {
     });
     const supabase = await createClient();
     const { error } = await supabase.storage.from(ASSIGNMENT_ATTACHMENTS_BUCKET).upload(storagePath, attachment, {
-      contentType: attachment.type || "application/pdf",
+      contentType: getUploadContentType(attachment),
       upsert: false,
     });
 
@@ -330,7 +331,7 @@ export async function createAssignmentAction(formData: FormData) {
     attachmentData = {
       attachmentFileName: attachment.name,
       attachmentFileSize: attachment.size,
-      attachmentMimeType: attachment.type || "application/pdf",
+      attachmentMimeType: getUploadContentType(attachment),
       attachmentStoragePath: storagePath,
     };
   }
@@ -440,7 +441,7 @@ export async function updateAssignmentAction(formData: FormData) {
     });
     const supabase = await createClient();
     const { error } = await supabase.storage.from(ASSIGNMENT_ATTACHMENTS_BUCKET).upload(storagePath, attachment, {
-      contentType: attachment.type || "application/pdf",
+      contentType: getUploadContentType(attachment),
       upsert: false,
     });
 
@@ -457,7 +458,7 @@ export async function updateAssignmentAction(formData: FormData) {
     nextAttachmentData = {
       attachmentFileName: attachment.name,
       attachmentFileSize: attachment.size,
-      attachmentMimeType: attachment.type || "application/pdf",
+      attachmentMimeType: getUploadContentType(attachment),
       attachmentStoragePath: storagePath,
     };
   } else if (removeAttachment) {
@@ -644,7 +645,7 @@ export async function submitAssignmentAction(formData: FormData) {
 
   const supabase = await createClient();
   const { error } = await supabase.storage.from(SUBMISSIONS_BUCKET).upload(storagePath, file, {
-    contentType: file.type || "application/octet-stream",
+    contentType: getUploadContentType(file),
     upsert: false,
   });
 

@@ -1,5 +1,7 @@
+import { isAllowedLmsFile } from "../files/lms-file-types";
+
 export const MATERIALS_BUCKET = "materials";
-export const MATERIAL_FILE_SIZE_LIMIT = 10 * 1024 * 1024;
+export const MATERIAL_FILE_SIZE_LIMIT = 25 * 1024 * 1024;
 
 const allowedMimeTypesByType = {
   pdf: new Set(["application/pdf"]),
@@ -8,6 +10,7 @@ const allowedMimeTypesByType = {
     "application/vnd.ms-powerpoint",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   ]),
+  file: null,
 } as const;
 
 export type UploadableMaterialType = keyof typeof allowedMimeTypesByType;
@@ -73,7 +76,15 @@ export function validateMaterialFile({
   }
 
   if (file.size > MATERIAL_FILE_SIZE_LIMIT) {
-    return "Ukuran file materi maksimal 10 MB.";
+    return "Ukuran file materi maksimal 25 MB.";
+  }
+
+  if (type === "file") {
+    if (!isAllowedLmsFile(file)) {
+      return "Format file materi belum didukung.";
+    }
+
+    return null;
   }
 
   if (!allowedMimeTypesByType[type].has(file.type)) {

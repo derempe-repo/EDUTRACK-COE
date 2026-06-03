@@ -39,6 +39,7 @@ import {
   getDosenModuleAssignmentsPath,
   getDosenModulePath,
 } from "@/features/classes/urls";
+import { LMS_ALLOWED_FILE_DESCRIPTION, LMS_FILE_ACCEPT } from "@/features/files/lms-file-types";
 import { requireRole } from "@/lib/auth";
 
 type DosenModuleAssignmentsPageProps = {
@@ -271,13 +272,16 @@ export default async function DosenModuleAssignmentsPage({
                                   />
                                 </div>
                                 <label className="block space-y-2 md:col-span-3">
-                                  <span className="text-sm font-medium text-neutral-700">Ganti lampiran PDF</span>
+                                  <span className="text-sm font-medium text-neutral-700">Ganti lampiran</span>
                                   <input
-                                    accept=".pdf,application/pdf"
+                                    accept={LMS_FILE_ACCEPT}
                                     className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
                                     name="attachment"
                                     type="file"
                                   />
+                                  <span className="block text-xs leading-5 text-neutral-500">
+                                    {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 25 MB.
+                                  </span>
                                 </label>
                                 {assignment.attachmentStoragePath ? (
                                   <label className="flex items-center gap-2 text-sm text-neutral-700 md:col-span-3">
@@ -524,14 +528,17 @@ export default async function DosenModuleAssignmentsPage({
                       </div>
                       <label className="block space-y-2 md:col-span-3">
                         <span className="text-sm font-medium text-neutral-700">
-                          Lampiran instruksi PDF
+                          Lampiran instruksi
                         </span>
                         <input
-                          accept=".pdf,application/pdf"
+                          accept={LMS_FILE_ACCEPT}
                           className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
                           name="attachment"
                           type="file"
                         />
+                        <span className="block text-xs leading-5 text-neutral-500">
+                          {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 25 MB.
+                        </span>
                       </label>
                       <div className="flex items-end">
                         <button

@@ -217,7 +217,7 @@ const errorMessages: Record<string, FeedbackNotice> = {
   },
   invalid_material_file: {
     title: "File materi tidak sesuai",
-    message: "Gunakan PDF untuk tipe PDF atau file presentasi untuk tipe slide.",
+    message: "Gunakan file LMS yang didukung: PDF, Word, TXT/MD, ZIP/RAR, file kode, atau dokumen belajar lainnya.",
     tone: "danger",
   },
   invalid_material_url: {
@@ -237,7 +237,7 @@ const errorMessages: Record<string, FeedbackNotice> = {
   },
   invalid_assignment_file: {
     title: "File tugas tidak sesuai",
-    message: "Lampiran tugas harus berupa PDF maksimal 10 MB.",
+    message: "Lampiran tugas dapat berupa PDF, Word, TXT/MD, ZIP/RAR, HTML/CSS, file kode, atau dokumen LMS lain maksimal 25 MB.",
     tone: "danger",
   },
   invalid_submission: {
@@ -247,7 +247,7 @@ const errorMessages: Record<string, FeedbackNotice> = {
   },
   invalid_submission_file: {
     title: "File submission tidak sesuai",
-    message: "Gunakan PDF, ZIP/RAR, TXT/MD, atau file source code web maksimal 20 MB.",
+    message: "Gunakan PDF, Word, TXT/MD, ZIP/RAR, HTML/CSS, file kode, atau dokumen LMS lain maksimal 50 MB.",
     tone: "danger",
   },
   invalid_submission_review: {

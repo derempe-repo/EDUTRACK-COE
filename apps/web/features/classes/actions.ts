@@ -35,7 +35,7 @@ import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { gradeWeightsTotal } from "@/features/grades/class-score";
 
 const classStatusSchema = z.enum(["draft", "published", "archived"]);
-const materialTypeSchema = z.enum(["pdf", "video", "slide", "link"]);
+const materialTypeSchema = z.enum(["pdf", "video", "slide", "link", "file"]);
 
 const textField = z
   .string()
@@ -627,7 +627,7 @@ export async function createMaterialAction(formData: FormData) {
     redirect("/dosen/dashboard?error=invalid_material_file");
   }
 
-  if (file && (parsed.data.type === "pdf" || parsed.data.type === "slide")) {
+  if (file && (parsed.data.type === "pdf" || parsed.data.type === "slide" || parsed.data.type === "file")) {
     const fileError = validateMaterialFile({ file, type: parsed.data.type });
 
     if (fileError) {
@@ -638,7 +638,7 @@ export async function createMaterialAction(formData: FormData) {
   const stepItem = await requireOwnedStep(parsed.data.stepId, profile.id);
   let storagePath: string | null = null;
 
-  if (file && (parsed.data.type === "pdf" || parsed.data.type === "slide")) {
+  if (file && (parsed.data.type === "pdf" || parsed.data.type === "slide" || parsed.data.type === "file")) {
     storagePath = buildMaterialStoragePath({
       classId: stepItem.classId,
       moduleId: stepItem.moduleId,
@@ -648,7 +648,7 @@ export async function createMaterialAction(formData: FormData) {
 
     const supabase = await createClient();
     const { error } = await supabase.storage.from(MATERIALS_BUCKET).upload(storagePath, file, {
-      contentType: file.type,
+      contentType: file.type || "application/octet-stream",
       upsert: false,
     });
 

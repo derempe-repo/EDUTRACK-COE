@@ -56,11 +56,31 @@ describe("material storage helpers", () => {
     expect(validateMaterialFile({ file, type: "pdf" })).toBe("Materi PDF harus memakai file PDF.");
   });
 
+  it("accepts general LMS files for file material", () => {
+    const docx = new File(["demo"], "materi.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    const html = new File(["<main />"], "latihan.html", { type: "text/html" });
+
+    expect(validateMaterialFile({ file: docx, type: "file" })).toBeNull();
+    expect(validateMaterialFile({ file: html, type: "file" })).toBeNull();
+  });
+
+  it("rejects unsupported general material files", () => {
+    const file = new File(["demo"], "materi.exe", {
+      type: "application/vnd.microsoft.portable-executable",
+    });
+
+    expect(validateMaterialFile({ file, type: "file" })).toBe(
+      "Format file materi belum didukung.",
+    );
+  });
+
   it("rejects files larger than the Learning MVP limit", () => {
     const file = new File([new Uint8Array(MATERIAL_FILE_SIZE_LIMIT + 1)], "large.pdf", {
       type: "application/pdf",
     });
 
-    expect(validateMaterialFile({ file, type: "pdf" })).toBe("Ukuran file materi maksimal 10 MB.");
+    expect(validateMaterialFile({ file, type: "pdf" })).toBe("Ukuran file materi maksimal 25 MB.");
   });
 });

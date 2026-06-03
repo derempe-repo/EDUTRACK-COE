@@ -22,7 +22,7 @@ export const userRole = pgEnum("user_role", [
 export const userStatus = pgEnum("user_status", ["active", "inactive"]);
 export const classStatus = pgEnum("class_status", ["draft", "published", "archived"]);
 export const memberRole = pgEnum("member_role", ["student", "lecturer", "assistant"]);
-export const materialType = pgEnum("material_type", ["pdf", "video", "slide", "link"]);
+export const materialType = pgEnum("material_type", ["pdf", "video", "slide", "link", "file"]);
 export const progressStatus = pgEnum("progress_status", [
   "not_started",
   "in_progress",

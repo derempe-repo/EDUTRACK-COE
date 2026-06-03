@@ -38,11 +38,27 @@ describe("submission storage helpers", () => {
     expect(validateSubmissionFile(file)).toBeNull();
   });
 
+  it("accepts reports and source files by extension when MIME type is generic", () => {
+    const report = new File(["demo"], "laporan.docx", { type: "" });
+    const source = new File(["print('demo')"], "main.py", { type: "application/octet-stream" });
+
+    expect(validateSubmissionFile(report)).toBeNull();
+    expect(validateSubmissionFile(source)).toBeNull();
+  });
+
+  it("rejects unsupported submission formats", () => {
+    const file = new File(["demo"], "program.exe", {
+      type: "application/vnd.microsoft.portable-executable",
+    });
+
+    expect(validateSubmissionFile(file)).toBe("Format file submission belum didukung.");
+  });
+
   it("rejects oversized files", () => {
     const file = new File([new Uint8Array(SUBMISSION_FILE_SIZE_LIMIT + 1)], "large.zip", {
       type: "application/zip",
     });
 
-    expect(validateSubmissionFile(file)).toBe("Ukuran file submission maksimal 20 MB.");
+    expect(validateSubmissionFile(file)).toBe("Ukuran file submission maksimal 50 MB.");
   });
 });

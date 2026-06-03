@@ -38,6 +38,7 @@ import {
   getDosenModulePath,
   getDosenModuleQuizzesPath,
 } from "@/features/classes/urls";
+import { LMS_ALLOWED_FILE_DESCRIPTION, LMS_FILE_ACCEPT } from "@/features/files/lms-file-types";
 import { requireRole } from "@/lib/auth";
 
 type DosenModulePageProps = {
@@ -213,10 +214,17 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
                         </summary>
                         <form
                           action={createMaterialAction}
-                          className="grid gap-3 border-t border-slate-200 bg-white p-4 md:grid-cols-[1fr_120px_120px_auto]"
+                          className="grid gap-4 border-t border-slate-200 bg-white p-4 lg:grid-cols-[minmax(0,1fr)_180px_120px]"
                         >
                           <input name="stepId" type="hidden" value={step.id} />
-                          <Field label="Materi" name="title" placeholder="Referensi HTML" required />
+                          <div className="lg:col-span-3">
+                            <Field
+                              label="Nama materi"
+                              name="title"
+                              placeholder="Contoh: Modul praktik HTML5, Referensi MDN, atau Template tugas CSS"
+                              required
+                            />
+                          </div>
                           <label className="block space-y-2">
                             <span className="text-sm font-medium text-neutral-700">Tipe</span>
                             <select
@@ -226,41 +234,49 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
                             >
                               <option value="link">Link</option>
                               <option value="pdf">PDF</option>
+                              <option value="file">File</option>
                               <option value="video">Video</option>
                               <option value="slide">Slide</option>
                             </select>
                           </label>
                           <Field defaultValue="1" label="Urutan" name="sortOrder" type="number" />
-                          <div className="flex items-end">
-                            <button
-                              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                              type="submit"
-                            >
-                              <Upload className="size-4" />
-                              Materi
-                            </button>
-                          </div>
-                          <div className="md:col-span-2">
+                          <div className="lg:col-span-3">
                             <Field
                               label="URL eksternal"
                               name="url"
-                              placeholder="https://example.com/materi atau video"
+                              placeholder="Contoh: https://developer.mozilla.org/id/docs/Web/HTML atau link video pembelajaran"
                               type="url"
                             />
                           </div>
-                          <label className="block space-y-2 md:col-span-2">
+                          <label className="block space-y-2 lg:col-span-3">
                             <span className="text-sm font-medium text-neutral-700">
-                              File PDF/slide
+                              File materi
                             </span>
                             <input
-                              accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                              accept={LMS_FILE_ACCEPT}
                               className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
                               name="file"
                               type="file"
                             />
+                            <span className="block text-xs leading-5 text-neutral-500">
+                              {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 25 MB.
+                            </span>
                           </label>
-                          <div className="md:col-span-2">
-                            <TextArea label="Deskripsi materi" name="description" />
+                          <div className="lg:col-span-3">
+                            <TextArea
+                              label="Deskripsi materi"
+                              name="description"
+                              placeholder="Ringkas isi materi, instruksi membaca, atau catatan yang perlu diperhatikan mahasiswa."
+                            />
+                          </div>
+                          <div className="flex justify-end lg:col-span-3">
+                            <button
+                              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
+                              type="submit"
+                            >
+                              <Upload className="size-4" />
+                              Tambah materi
+                            </button>
                           </div>
                         </form>
                       </details>
@@ -542,10 +558,12 @@ function TextArea({
   defaultValue,
   label,
   name,
+  placeholder,
 }: {
   defaultValue?: string;
   label: string;
   name: string;
+  placeholder?: string;
 }) {
   return (
     <label className="block space-y-2">
@@ -554,6 +572,7 @@ function TextArea({
         className="min-h-28 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
         defaultValue={defaultValue}
         name={name}
+        placeholder={placeholder}
       />
     </label>
   );

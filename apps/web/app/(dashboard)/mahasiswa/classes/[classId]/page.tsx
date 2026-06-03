@@ -32,6 +32,7 @@ import { markMaterialReadAction } from "@/features/classes/actions";
 import { getMahasiswaClassDetail } from "@/features/classes/data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import { extractIdFromSlugParam, getMahasiswaClassPath } from "@/features/classes/urls";
+import { LMS_ALLOWED_FILE_DESCRIPTION, LMS_FILE_ACCEPT } from "@/features/files/lms-file-types";
 import { startQuizAction } from "@/features/quizzes/actions";
 import { requireRole } from "@/lib/auth";
 
@@ -55,6 +56,7 @@ const materialTypeLabels = {
   link: "Link",
   video: "Video",
   pdf: "PDF",
+  file: "File",
   slide: "Slide",
 } as const;
 
@@ -729,12 +731,15 @@ export default async function MahasiswaClassDetailPage({
                                               File submission
                                             </span>
                                             <input
-                                              accept=".pdf,.zip,.rar,.txt,.md,.js,.ts,.tsx,.jsx,.html,.css,.json,application/pdf,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed,text/plain"
+                                              accept={LMS_FILE_ACCEPT}
                                               className="w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
                                               name="file"
                                               required
                                               type="file"
                                             />
+                                            <span className="block text-xs leading-5 text-neutral-500">
+                                              {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 50 MB.
+                                            </span>
                                           </label>
                                           <label className="block space-y-2">
                                             <span className="text-sm font-medium text-neutral-700">

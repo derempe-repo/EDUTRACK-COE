@@ -18,18 +18,24 @@ describe("assignment attachment storage helpers", () => {
     ).toBe("class-id/module-id/assignments/token-instruksi-tugas-1.pdf");
   });
 
-  it("accepts pdf attachments", () => {
+  it("accepts common LMS attachments", () => {
     const file = new File(["demo"], "instruksi.pdf", { type: "application/pdf" });
-
-    expect(validateAssignmentAttachmentFile(file)).toBeNull();
-  });
-
-  it("rejects non-pdf attachments", () => {
-    const file = new File(["demo"], "instruksi.docx", {
+    const docx = new File(["demo"], "brief.docx", {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
+    const source = new File(["body {}"], "starter.css", { type: "text/css" });
 
-    expect(validateAssignmentAttachmentFile(file)).toBe("Lampiran tugas harus berupa PDF.");
+    expect(validateAssignmentAttachmentFile(file)).toBeNull();
+    expect(validateAssignmentAttachmentFile(docx)).toBeNull();
+    expect(validateAssignmentAttachmentFile(source)).toBeNull();
+  });
+
+  it("rejects unsupported attachments", () => {
+    const file = new File(["demo"], "installer.exe", {
+      type: "application/vnd.microsoft.portable-executable",
+    });
+
+    expect(validateAssignmentAttachmentFile(file)).toBe("Format lampiran tugas belum didukung.");
   });
 
   it("rejects oversized attachments", () => {
@@ -37,6 +43,6 @@ describe("assignment attachment storage helpers", () => {
       type: "application/pdf",
     });
 
-    expect(validateAssignmentAttachmentFile(file)).toBe("Ukuran file tugas maksimal 10 MB.");
+    expect(validateAssignmentAttachmentFile(file)).toBe("Ukuran file tugas maksimal 25 MB.");
   });
 });
