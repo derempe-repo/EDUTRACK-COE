@@ -3,6 +3,7 @@ import { Search, ShieldCheck, UserCheck } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { updateManagedProfileAction } from "@/features/admin/actions";
 import { getAdminUsersData, type AdminSearchParams } from "@/features/admin/data";
 import { getAdminFeedbackNotice } from "@/features/admin/feedback";
@@ -80,7 +81,7 @@ export async function AdminUsersPage({
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
-          <p className="text-sm font-semibold text-slate-950">{data.users.length} user ditampilkan</p>
+          <p className="text-sm font-semibold text-slate-950">{data.pagination.totalItems} user ditemukan</p>
         </div>
         {data.users.length > 0 ? (
           <div className="divide-y divide-slate-200">
@@ -143,6 +144,12 @@ export async function AdminUsersPage({
         ) : (
           <p className="p-6 text-sm text-slate-600">Tidak ada user yang cocok dengan filter.</p>
         )}
+        <PaginationControls
+          currentPage={data.pagination.page}
+          pageSize={data.pagination.pageSize}
+          searchParams={resolvedSearchParams}
+          totalItems={data.pagination.totalItems}
+        />
       </section>
     </div>
   );

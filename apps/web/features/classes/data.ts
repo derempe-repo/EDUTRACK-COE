@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 
 import {
   assignments,
@@ -32,8 +32,9 @@ type CountRow = {
   value: number;
 };
 
-const RECENT_QUIZ_ATTEMPT_LIMIT = 120;
 const RECENT_EXAM_EVENT_LIMIT = 300;
+export const MODULE_ATTEMPT_PAGE_SIZE = 30;
+export const MODULE_SUBMISSION_PAGE_SIZE = 20;
 
 function toCountMap(rows: CountRow[]) {
   return new Map(rows.map((row) => [row.id, Number(row.value)]));
@@ -290,7 +291,11 @@ export async function getDosenClassDetail(lecturerId: string, classId: string) {
   };
 }
 
-export async function getDosenModuleDetail(lecturerId: string, classId: string, moduleId: string) {
+export async function getDosenModuleDetail(
+  lecturerId: string,
+  classId: string,
+  moduleId: string,
+) {
   const moduleRows = await db
     .select({
       classItem: {
@@ -321,7 +326,7 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
     return null;
   }
 
-  const [stepRows, materialRows, assignmentRows, submissionRows] = await Promise.all([
+  const [stepRows, materialRows, assignmentRows] = await Promise.all([
     db
       .select({
         id: moduleSteps.id,
@@ -371,33 +376,6 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
       .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
       .where(eq(moduleSteps.moduleId, moduleId))
       .orderBy(asc(assignments.dueAt), asc(assignments.createdAt)),
-    db
-      .select({
-        id: submissions.id,
-        assignmentId: submissions.assignmentId,
-        studentId: submissions.studentId,
-        studentName: profiles.name,
-        studentEmail: profiles.email,
-        status: submissions.status,
-        fileName: submissions.fileName,
-        score: submissions.score,
-        feedback: submissions.feedback,
-        note: submissions.note,
-        plagiarismStatus: submissions.plagiarismStatus,
-        plagiarismCheckId: plagiarismChecks.id,
-        similarityScore: plagiarismChecks.similarityScore,
-        thresholdPercent: plagiarismChecks.thresholdPercent,
-        extractionStatus: plagiarismChecks.extractionStatus,
-        submittedAt: submissions.submittedAt,
-        reviewedAt: submissions.reviewedAt,
-      })
-      .from(submissions)
-      .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
-      .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
-      .innerJoin(profiles, eq(profiles.id, submissions.studentId))
-      .leftJoin(plagiarismChecks, eq(plagiarismChecks.submissionId, submissions.id))
-      .where(eq(moduleSteps.moduleId, moduleId))
-      .orderBy(desc(submissions.submittedAt)),
   ]);
 
   const [quizRows, finalExamRows, questionRows, optionRows] = await Promise.all([
@@ -467,50 +445,24 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
       .orderBy(asc(questionOptions.sortOrder)),
   ]);
 
-  const [quizAttemptRows, finalAttemptRows] = await Promise.all([
-    db
-      .select({
-        id: quizAttempts.id,
-        quizId: quizAttempts.quizId,
-        studentName: profiles.name,
-        studentEmail: profiles.email,
-        status: quizAttempts.status,
-        score: quizAttempts.score,
-        warningCount: quizAttempts.warningCount,
-        startedAt: quizAttempts.startedAt,
-        submittedAt: quizAttempts.submittedAt,
-      })
-      .from(quizAttempts)
-      .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
-      .innerJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
-      .innerJoin(profiles, eq(profiles.id, quizAttempts.studentId))
-      .where(
-        and(
-          eq(moduleSteps.moduleId, moduleId),
-          eq(quizzes.quizType, "step"),
-        ),
-      )
-      .orderBy(desc(quizAttempts.startedAt))
-      .limit(RECENT_QUIZ_ATTEMPT_LIMIT),
-    db
-      .select({
-        id: quizAttempts.id,
-        quizId: quizAttempts.quizId,
-        studentName: profiles.name,
-        studentEmail: profiles.email,
-        status: quizAttempts.status,
-        score: quizAttempts.score,
-        warningCount: quizAttempts.warningCount,
-        startedAt: quizAttempts.startedAt,
-        submittedAt: quizAttempts.submittedAt,
-      })
-      .from(quizAttempts)
-      .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
-      .innerJoin(profiles, eq(profiles.id, quizAttempts.studentId))
-      .where(and(eq(quizzes.moduleId, moduleId), eq(quizzes.quizType, "final")))
-      .orderBy(desc(quizAttempts.startedAt))
-      .limit(RECENT_QUIZ_ATTEMPT_LIMIT),
-  ]);
+  const attemptSummaryRows = await db
+    .select({
+      quizId: quizAttempts.quizId,
+      value: sql<number>`count(*)::int`,
+    })
+    .from(quizAttempts)
+    .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
+    .leftJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
+    .where(
+      or(
+        and(eq(moduleSteps.moduleId, moduleId), eq(quizzes.quizType, "step")),
+        and(eq(quizzes.moduleId, moduleId), eq(quizzes.quizType, "final")),
+      ),
+    )
+    .groupBy(quizAttempts.quizId);
+  const attemptCountByQuiz = new Map(
+    attemptSummaryRows.map((item) => [item.quizId, Number(item.value)]),
+  );
 
   const materialsByStep = new Map<string, typeof materialRows>();
   for (const material of materialRows) {
@@ -519,46 +471,10 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
     materialsByStep.set(material.moduleStepId, current);
   }
 
-  const allAttemptIds = [...quizAttemptRows, ...finalAttemptRows].map((attempt) => attempt.id);
-  const examEventRows =
-    allAttemptIds.length > 0
-      ? await db
-          .select({
-            attemptId: examModeEvents.attemptId,
-            createdAt: examModeEvents.createdAt,
-            detail: examModeEvents.detail,
-            eventType: examModeEvents.eventType,
-            id: examModeEvents.id,
-          })
-          .from(examModeEvents)
-          .where(inArray(examModeEvents.attemptId, allAttemptIds))
-          .orderBy(desc(examModeEvents.createdAt))
-          .limit(RECENT_EXAM_EVENT_LIMIT)
-      : [];
-  const eventsByAttempt = new Map<string, typeof examEventRows>();
-  for (const event of examEventRows) {
-    const current = eventsByAttempt.get(event.attemptId) ?? [];
-    current.push(event);
-    eventsByAttempt.set(event.attemptId, current);
-  }
-
-  const submissionsByAssignment = new Map<string, typeof submissionRows>();
-  for (const submission of submissionRows) {
-    const current = submissionsByAssignment.get(submission.assignmentId) ?? [];
-    current.push(submission);
-    submissionsByAssignment.set(submission.assignmentId, current);
-  }
-
-  const assignmentsByStep = new Map<
-    string,
-    Array<(typeof assignmentRows)[number] & { submissions: typeof submissionRows }>
-  >();
+  const assignmentsByStep = new Map<string, typeof assignmentRows>();
   for (const assignment of assignmentRows) {
     const current = assignmentsByStep.get(assignment.moduleStepId) ?? [];
-    current.push({
-      ...assignment,
-      submissions: submissionsByAssignment.get(assignment.id) ?? [],
-    });
+    current.push(assignment);
     assignmentsByStep.set(assignment.moduleStepId, current);
   }
 
@@ -582,25 +498,9 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
     questionsByStep.set(question.moduleStepId, current);
   }
 
-  const attemptsWithEvents = quizAttemptRows.map((attempt) => ({
-    ...attempt,
-    events: eventsByAttempt.get(attempt.id) ?? [],
-  }));
-  const finalAttemptsWithEvents = finalAttemptRows.map((attempt) => ({
-    ...attempt,
-    events: eventsByAttempt.get(attempt.id) ?? [],
-  }));
-
-  const attemptsByQuiz = new Map<string, typeof attemptsWithEvents>();
-  for (const attempt of attemptsWithEvents) {
-    const current = attemptsByQuiz.get(attempt.quizId) ?? [];
-    current.push(attempt);
-    attemptsByQuiz.set(attempt.quizId, current);
-  }
-
   const quizzesByStep = new Map<
     string,
-    Array<(typeof quizRows)[number] & { attempts: typeof attemptsWithEvents }>
+    Array<(typeof quizRows)[number] & { attemptCount: number }>
   >();
   for (const quiz of quizRows) {
     if (!quiz.moduleStepId) {
@@ -610,7 +510,7 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
     const current = quizzesByStep.get(quiz.moduleStepId) ?? [];
     current.push({
       ...quiz,
-      attempts: attemptsByQuiz.get(quiz.id) ?? [],
+      attemptCount: attemptCountByQuiz.get(quiz.id) ?? 0,
     });
     quizzesByStep.set(quiz.moduleStepId, current);
   }
@@ -622,9 +522,10 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
       finalExam: finalExamRows[0]
         ? {
             ...finalExamRows[0],
-            attempts: finalAttemptsWithEvents.filter((attempt) => attempt.quizId === finalExamRows[0]?.id),
+            attemptCount: attemptCountByQuiz.get(finalExamRows[0].id) ?? 0,
           }
         : null,
+      totalAttemptCount: [...attemptCountByQuiz.values()].reduce((sum, value) => sum + value, 0),
       steps: stepRows.map((step) => ({
         ...step,
         materials: materialsByStep.get(step.id) ?? [],
@@ -633,6 +534,133 @@ export async function getDosenModuleDetail(lecturerId: string, classId: string, 
         questions: questionsByStep.get(step.id) ?? [],
       })),
     },
+  };
+}
+
+export async function getDosenQuizAttemptsDetail(
+  lecturerId: string,
+  classId: string,
+  moduleId: string,
+  quizId: string,
+  options?: { page?: number },
+) {
+  const page = options?.page && options.page > 0 ? options.page : 1;
+  const quizRows = await db
+    .select({
+      classItem: {
+        id: classes.id,
+        title: classes.title,
+        description: classes.description,
+        status: classes.status,
+      },
+      moduleItem: {
+        id: modules.id,
+        classId: modules.classId,
+        title: modules.title,
+        description: modules.description,
+        sortOrder: modules.sortOrder,
+        isLocked: modules.isLocked,
+        createdAt: modules.createdAt,
+        updatedAt: modules.updatedAt,
+      },
+      quizItem: {
+        id: quizzes.id,
+        title: quizzes.title,
+        description: quizzes.description,
+        durationMinutes: quizzes.durationMinutes,
+        questionCount: quizzes.questionCount,
+        passingScore: quizzes.passingScore,
+        isActive: quizzes.isActive,
+        quizType: quizzes.quizType,
+      },
+      stepItem: {
+        id: moduleSteps.id,
+        title: moduleSteps.title,
+        sortOrder: moduleSteps.sortOrder,
+      },
+    })
+    .from(quizzes)
+    .leftJoin(moduleSteps, eq(moduleSteps.id, quizzes.moduleStepId))
+    .innerJoin(modules, sql`${modules.id} = coalesce(${moduleSteps.moduleId}, ${quizzes.moduleId})`)
+    .innerJoin(classes, eq(classes.id, modules.classId))
+    .where(
+      and(
+        eq(classes.id, classId),
+        eq(classes.createdBy, lecturerId),
+        eq(modules.id, moduleId),
+        eq(quizzes.id, quizId),
+      ),
+    )
+    .limit(1);
+
+  const row = quizRows[0] ?? null;
+  if (!row) {
+    return null;
+  }
+
+  const [attemptRows, countRows] = await Promise.all([
+    db
+      .select({
+        id: quizAttempts.id,
+        quizId: quizAttempts.quizId,
+        studentName: profiles.name,
+        studentEmail: profiles.email,
+        status: quizAttempts.status,
+        score: quizAttempts.score,
+        warningCount: quizAttempts.warningCount,
+        startedAt: quizAttempts.startedAt,
+        submittedAt: quizAttempts.submittedAt,
+      })
+      .from(quizAttempts)
+      .innerJoin(profiles, eq(profiles.id, quizAttempts.studentId))
+      .where(eq(quizAttempts.quizId, quizId))
+      .orderBy(desc(quizAttempts.startedAt))
+      .limit(MODULE_ATTEMPT_PAGE_SIZE)
+      .offset((page - 1) * MODULE_ATTEMPT_PAGE_SIZE),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(quizAttempts)
+      .where(eq(quizAttempts.quizId, quizId)),
+  ]);
+  const allAttemptIds = attemptRows.map((attempt) => attempt.id);
+  const examEventRows =
+    allAttemptIds.length > 0
+      ? await db
+          .select({
+            attemptId: examModeEvents.attemptId,
+            createdAt: examModeEvents.createdAt,
+            detail: examModeEvents.detail,
+            eventType: examModeEvents.eventType,
+            id: examModeEvents.id,
+          })
+          .from(examModeEvents)
+          .where(inArray(examModeEvents.attemptId, allAttemptIds))
+          .orderBy(desc(examModeEvents.createdAt))
+          .limit(RECENT_EXAM_EVENT_LIMIT)
+      : [];
+  const eventsByAttempt = new Map<string, typeof examEventRows>();
+  for (const event of examEventRows) {
+    const current = eventsByAttempt.get(event.attemptId) ?? [];
+    current.push(event);
+    eventsByAttempt.set(event.attemptId, current);
+  }
+
+  const attemptsWithEvents = attemptRows.map((attempt) => ({
+    ...attempt,
+    events: eventsByAttempt.get(attempt.id) ?? [],
+  }));
+
+  return {
+    classItem: row.classItem,
+    moduleItem: row.moduleItem,
+    pagination: {
+      page,
+      pageSize: MODULE_ATTEMPT_PAGE_SIZE,
+      totalItems: Number(countRows[0]?.value ?? 0),
+    },
+    quizItem: row.quizItem,
+    stepItem: row.stepItem?.id ? row.stepItem : null,
+    attempts: attemptsWithEvents,
   };
 }
 
@@ -799,7 +827,7 @@ export async function getDosenModuleAssignmentsDetail(
     return null;
   }
 
-  const [stepRows, assignmentRows, submissionRows] = await Promise.all([
+  const [stepRows, assignmentRows, submissionSummaryRows] = await Promise.all([
     db
       .select({
         id: moduleSteps.id,
@@ -835,6 +863,166 @@ export async function getDosenModuleAssignmentsDetail(
       .orderBy(asc(assignments.dueAt), asc(assignments.createdAt)),
     db
       .select({
+        assignmentId: submissions.assignmentId,
+        status: submissions.status,
+        plagiarismStatus: submissions.plagiarismStatus,
+        value: sql<number>`count(*)::int`,
+      })
+      .from(submissions)
+      .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
+      .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
+      .where(eq(moduleSteps.moduleId, moduleId))
+      .groupBy(submissions.assignmentId, submissions.status, submissions.plagiarismStatus),
+  ]);
+
+  const submissionSummaryByAssignment = new Map<
+    string,
+    {
+      accepted: number;
+      flagged: number;
+      pendingReview: number;
+      rejected: number;
+      total: number;
+    }
+  >();
+  for (const row of submissionSummaryRows) {
+    const current = submissionSummaryByAssignment.get(row.assignmentId) ?? {
+      accepted: 0,
+      flagged: 0,
+      pendingReview: 0,
+      rejected: 0,
+      total: 0,
+    };
+    const value = Number(row.value);
+    current.total += value;
+    if (row.status === "accepted") {
+      current.accepted += value;
+    }
+    if (row.status === "rejected" || row.status === "resubmit_allowed") {
+      current.rejected += value;
+    }
+    if (row.status === "submitted" || row.status === "under_review") {
+      current.pendingReview += value;
+    }
+    if (row.plagiarismStatus === "flagged") {
+      current.flagged += value;
+    }
+    submissionSummaryByAssignment.set(row.assignmentId, current);
+  }
+
+  const assignmentsByStep = new Map<
+    string,
+    Array<
+      (typeof assignmentRows)[number] & {
+        submissionSummary: {
+          accepted: number;
+          flagged: number;
+          pendingReview: number;
+          rejected: number;
+          total: number;
+        };
+      }
+    >
+  >();
+  for (const assignment of assignmentRows) {
+    const current = assignmentsByStep.get(assignment.moduleStepId) ?? [];
+    current.push({
+      ...assignment,
+      submissionSummary: submissionSummaryByAssignment.get(assignment.id) ?? {
+        accepted: 0,
+        flagged: 0,
+        pendingReview: 0,
+        rejected: 0,
+        total: 0,
+      },
+    });
+    assignmentsByStep.set(assignment.moduleStepId, current);
+  }
+
+  return {
+    classItem: row.classItem,
+    moduleItem: {
+      ...row.moduleItem,
+      totalSubmissionCount: [...submissionSummaryByAssignment.values()].reduce(
+        (sum, item) => sum + item.total,
+        0,
+      ),
+      steps: stepRows.map((step) => ({
+        ...step,
+        assignments: assignmentsByStep.get(step.id) ?? [],
+      })),
+    },
+  };
+}
+
+export async function getDosenAssignmentSubmissionsDetail(
+  lecturerId: string,
+  classId: string,
+  moduleId: string,
+  assignmentId: string,
+  options?: { page?: number },
+) {
+  const page = options?.page && options.page > 0 ? options.page : 1;
+  const assignmentRows = await db
+    .select({
+      assignmentItem: {
+        id: assignments.id,
+        moduleStepId: assignments.moduleStepId,
+        title: assignments.title,
+        description: assignments.description,
+        attachmentFileName: assignments.attachmentFileName,
+        attachmentFileSize: assignments.attachmentFileSize,
+        attachmentMimeType: assignments.attachmentMimeType,
+        attachmentStoragePath: assignments.attachmentStoragePath,
+        dueAt: assignments.dueAt,
+        maxScore: assignments.maxScore,
+        isActive: assignments.isActive,
+        createdAt: assignments.createdAt,
+      },
+      classItem: {
+        id: classes.id,
+        title: classes.title,
+        description: classes.description,
+        status: classes.status,
+      },
+      moduleItem: {
+        id: modules.id,
+        classId: modules.classId,
+        title: modules.title,
+        description: modules.description,
+        sortOrder: modules.sortOrder,
+        isLocked: modules.isLocked,
+        createdAt: modules.createdAt,
+        updatedAt: modules.updatedAt,
+      },
+      stepItem: {
+        id: moduleSteps.id,
+        title: moduleSteps.title,
+        sortOrder: moduleSteps.sortOrder,
+      },
+    })
+    .from(assignments)
+    .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
+    .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
+    .innerJoin(classes, eq(classes.id, modules.classId))
+    .where(
+      and(
+        eq(classes.id, classId),
+        eq(classes.createdBy, lecturerId),
+        eq(modules.id, moduleId),
+        eq(assignments.id, assignmentId),
+      ),
+    )
+    .limit(1);
+
+  const row = assignmentRows[0] ?? null;
+  if (!row) {
+    return null;
+  }
+
+  const [submissionRows, countRows] = await Promise.all([
+    db
+      .select({
         id: submissions.id,
         assignmentId: submissions.assignmentId,
         studentId: submissions.studentId,
@@ -854,43 +1042,29 @@ export async function getDosenModuleAssignmentsDetail(
         reviewedAt: submissions.reviewedAt,
       })
       .from(submissions)
-      .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
-      .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
       .innerJoin(profiles, eq(profiles.id, submissions.studentId))
       .leftJoin(plagiarismChecks, eq(plagiarismChecks.submissionId, submissions.id))
-      .where(eq(moduleSteps.moduleId, moduleId))
-      .orderBy(desc(submissions.submittedAt)),
+      .where(eq(submissions.assignmentId, assignmentId))
+      .orderBy(desc(submissions.submittedAt))
+      .limit(MODULE_SUBMISSION_PAGE_SIZE)
+      .offset((page - 1) * MODULE_SUBMISSION_PAGE_SIZE),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(submissions)
+      .where(eq(submissions.assignmentId, assignmentId)),
   ]);
 
-  const submissionsByAssignment = new Map<string, typeof submissionRows>();
-  for (const submission of submissionRows) {
-    const current = submissionsByAssignment.get(submission.assignmentId) ?? [];
-    current.push(submission);
-    submissionsByAssignment.set(submission.assignmentId, current);
-  }
-
-  const assignmentsByStep = new Map<
-    string,
-    Array<(typeof assignmentRows)[number] & { submissions: typeof submissionRows }>
-  >();
-  for (const assignment of assignmentRows) {
-    const current = assignmentsByStep.get(assignment.moduleStepId) ?? [];
-    current.push({
-      ...assignment,
-      submissions: submissionsByAssignment.get(assignment.id) ?? [],
-    });
-    assignmentsByStep.set(assignment.moduleStepId, current);
-  }
-
   return {
+    assignmentItem: row.assignmentItem,
     classItem: row.classItem,
-    moduleItem: {
-      ...row.moduleItem,
-      steps: stepRows.map((step) => ({
-        ...step,
-        assignments: assignmentsByStep.get(step.id) ?? [],
-      })),
+    moduleItem: row.moduleItem,
+    pagination: {
+      page,
+      pageSize: MODULE_SUBMISSION_PAGE_SIZE,
+      totalItems: Number(countRows[0]?.value ?? 0),
     },
+    stepItem: row.stepItem,
+    submissions: submissionRows,
   };
 }
 

@@ -24,6 +24,14 @@ export function moduleSlug({ id, title }: { id: string; title: string }) {
   return `${slugifyTitle(title)}-${id}`;
 }
 
+export function assignmentSlug({ id, title }: { id: string; title: string }) {
+  return `${slugifyTitle(title)}-${id}`;
+}
+
+export function quizSlug({ id, title }: { id: string; title: string }) {
+  return `${slugifyTitle(title)}-${id}`;
+}
+
 export function getDosenClassPath(classItem: { id: string; title: string }) {
   return `/dosen/classes/${classSlug(classItem)}`;
 }
@@ -62,9 +70,25 @@ export function getDosenModuleAssignmentsPath(
   return `${getDosenModulePath(classItem, moduleItem)}/assignments`;
 }
 
+export function getDosenAssignmentSubmissionsPath(
+  classItem: { id: string; title: string },
+  moduleItem: { id: string; title: string },
+  assignmentItem: { id: string; title: string },
+) {
+  return `${getDosenModuleAssignmentsPath(classItem, moduleItem)}/${assignmentSlug(assignmentItem)}/submissions`;
+}
+
 export function getDosenModuleQuizzesPath(
   classItem: { id: string; title: string },
   moduleItem: { id: string; title: string },
 ) {
   return `${getDosenModulePath(classItem, moduleItem)}/quizzes`;
+}
+
+export function getDosenQuizAttemptsPath(
+  classItem: { id: string; title: string },
+  moduleItem: { id: string; title: string },
+  quizItem: { id: string; title: string },
+) {
+  return `${getDosenModuleQuizzesPath(classItem, moduleItem)}/${quizSlug(quizItem)}/attempts`;
 }

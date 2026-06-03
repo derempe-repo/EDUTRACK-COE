@@ -1,6 +1,7 @@
 import { Search, ScrollText } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { getAuditLogData, type AdminSearchParams } from "@/features/admin/data";
 import { getAdminBasePath } from "@/features/admin/urls";
 import type { AppProfile } from "@/lib/auth";
@@ -12,7 +13,8 @@ export async function AdminAuditLogsPage({
   profile: AppProfile;
   searchParams: Promise<AdminSearchParams>;
 }) {
-  const data = await getAuditLogData(await searchParams);
+  const resolvedSearchParams = await searchParams;
+  const data = await getAuditLogData(resolvedSearchParams);
   const basePath = getAdminBasePath(profile.role);
 
   return (
@@ -63,7 +65,7 @@ export async function AdminAuditLogsPage({
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
-          <p className="text-sm font-semibold text-slate-950">{data.logs.length} aktivitas terbaru ditampilkan</p>
+          <p className="text-sm font-semibold text-slate-950">{data.pagination.totalItems} aktivitas ditemukan</p>
         </div>
         {data.logs.length > 0 ? (
           <div className="divide-y divide-slate-200">
@@ -105,6 +107,12 @@ export async function AdminAuditLogsPage({
         ) : (
           <p className="p-6 text-sm text-slate-600">Belum ada audit log yang cocok dengan filter.</p>
         )}
+        <PaginationControls
+          currentPage={data.pagination.page}
+          pageSize={data.pagination.pageSize}
+          searchParams={resolvedSearchParams}
+          totalItems={data.pagination.totalItems}
+        />
       </section>
     </div>
   );

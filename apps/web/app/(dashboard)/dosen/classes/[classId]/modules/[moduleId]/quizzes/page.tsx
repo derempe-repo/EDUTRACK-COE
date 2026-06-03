@@ -4,10 +4,8 @@ import {
   ClipboardList,
   ListChecks,
   Plus,
-  RotateCcw,
   Save,
   Settings,
-  ShieldAlert,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,13 +23,13 @@ import {
   getDosenClassPath,
   getDosenModulePath,
   getDosenModuleQuizzesPath,
+  getDosenQuizAttemptsPath,
 } from "@/features/classes/urls";
 import {
   createFinalExamAction,
   createQuestionAction,
   createQuizAction,
   deleteQuestionAction,
-  resetQuizAttemptAction,
   updateQuizAction,
 } from "@/features/quizzes/actions";
 import { QuestionImportPanel } from "@/features/quizzes/question-import-panel";
@@ -45,24 +43,6 @@ type DosenModuleQuizzesPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const quizAttemptStatusLabels = {
-  expired: "Expired",
-  reset: "Reset",
-  started: "Sedang dikerjakan",
-  submitted: "Selesai",
-} as const;
-
-function formatDateTime(value: Date | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(value);
-}
-
 export default async function DosenModuleQuizzesPage({
   params,
   searchParams,
@@ -71,8 +51,9 @@ export default async function DosenModuleQuizzesPage({
   const { classId: classParam, moduleId: moduleParam } = await params;
   const classId = extractIdFromSlugParam(classParam);
   const moduleId = extractIdFromSlugParam(moduleParam);
+  const resolvedSearchParams = await searchParams;
   const data = await getDosenModuleDetail(profile.id, classId, moduleId);
-  const feedback = getFeedbackNotice(await searchParams);
+  const feedback = getFeedbackNotice(resolvedSearchParams);
 
   if (!data) {
     notFound();
@@ -88,10 +69,7 @@ export default async function DosenModuleQuizzesPage({
     data.moduleItem.steps.reduce((sum, step) => sum + step.quizzes.length, 0) +
     (finalExam ? 1 : 0);
   const questionCount = data.moduleItem.steps.reduce((sum, step) => sum + step.questions.length, 0);
-  const attemptCount = data.moduleItem.steps.reduce(
-    (sum, step) => sum + step.quizzes.reduce((stepSum, quiz) => stepSum + quiz.attempts.length, 0),
-    0,
-  ) + (finalExam?.attempts.length ?? 0);
+  const attemptCount = data.moduleItem.totalAttemptCount;
 
   return (
     <DashboardShell profile={profile} title={`Kuis - ${data.moduleItem.title}`}>
@@ -158,7 +136,7 @@ export default async function DosenModuleQuizzesPage({
           </div>
 
           {finalExam ? (
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]">
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
               <article className="rounded-lg border border-emerald-200 bg-white p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-semibold text-emerald-950">{finalExam.title}</h2>
@@ -203,7 +181,19 @@ export default async function DosenModuleQuizzesPage({
                   </form>
                 </details>
               </article>
-              <AttemptList attempts={finalExam.attempts} />
+              <div className="rounded-lg border border-emerald-200 bg-white p-4">
+                <p className="text-sm font-semibold text-emerald-950">Attempt final exam</p>
+                <p className="mt-2 text-3xl font-bold text-emerald-900">{finalExam.attemptCount}</p>
+                <p className="mt-1 text-sm leading-6 text-emerald-800">
+                  Buka halaman khusus untuk melihat detail attempt dan aktivitas exam mode.
+                </p>
+                <Link
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800"
+                  href={getDosenQuizAttemptsPath(data.classItem, data.moduleItem, finalExam)}
+                >
+                  Lihat attempt
+                </Link>
+              </div>
             </div>
           ) : (
             <details className="group mt-4 rounded-md border border-emerald-200 bg-white">
@@ -364,8 +354,21 @@ export default async function DosenModuleQuizzesPage({
                               </div>
                             </details>
 
-                            <div className="mt-3">
-                              <AttemptList attempts={quiz.attempts} />
+                            <div className="mt-3 flex flex-col gap-3 rounded-md border border-violet-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-violet-950">
+                                  {quiz.attemptCount} attempt mahasiswa
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-violet-800">
+                                  Detail attempt dan warning exam mode tersedia di halaman khusus.
+                                </p>
+                              </div>
+                              <Link
+                                className="inline-flex w-full items-center justify-center rounded-md bg-violet-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-800 sm:w-fit"
+                                href={getDosenQuizAttemptsPath(data.classItem, data.moduleItem, quiz)}
+                              >
+                                Lihat attempt
+                              </Link>
                             </div>
                           </article>
                         ))}
@@ -562,100 +565,6 @@ function MiniStat({ label, value }: { label: string; value: number }) {
       <p className="text-2xl font-bold text-white">{value}</p>
       <p className="text-xs font-semibold text-sky-100/75">{label}</p>
     </div>
-  );
-}
-
-type QuizAttemptView = {
-  events?: Array<{
-    createdAt: Date;
-    detail: string | null;
-    eventType: string;
-    id: string;
-  }>;
-  id: string;
-  score: number | null;
-  startedAt: Date;
-  status: keyof typeof quizAttemptStatusLabels;
-  studentEmail: string;
-  studentName: string;
-  submittedAt: Date | null;
-  warningCount: number;
-};
-
-function AttemptList({ attempts }: { attempts: QuizAttemptView[] }) {
-  return (
-    <details className="group rounded-md border border-violet-100 bg-violet-50">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-semibold text-violet-950 [&::-webkit-details-marker]:hidden">
-        <span className="inline-flex items-center gap-2">
-          <ClipboardList className="size-4 text-violet-700" />
-          Attempt mahasiswa ({attempts.length})
-        </span>
-        <ChevronDown className="size-4 text-violet-700 transition group-open:rotate-180" />
-      </summary>
-      {attempts.length > 0 ? (
-        <div className="grid gap-2 border-t border-violet-100 p-3">
-          {attempts.map((attempt) => (
-            <div
-              className="rounded-md border border-violet-100 bg-white px-3 py-2 text-sm"
-              key={attempt.id}
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <p className="font-semibold text-neutral-950">{attempt.studentName}</p>
-                  <p className="break-words text-xs text-neutral-500 [overflow-wrap:anywhere]">
-                    {attempt.studentEmail}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <span className="w-fit rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs font-semibold text-neutral-700">
-                    {quizAttemptStatusLabels[attempt.status]}
-                    {attempt.score !== null ? ` - Nilai ${attempt.score}` : ""}
-                  </span>
-                  {attempt.status === "submitted" || attempt.status === "reset" || attempt.status === "expired" ? (
-                    <form action={resetQuizAttemptAction}>
-                      <input name="attemptId" type="hidden" value={attempt.id} />
-                      <ConfirmSubmitButton
-                        className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
-                        message="Buka kesempatan ulang untuk mahasiswa ini?"
-                        title="Buka retake"
-                      >
-                        <RotateCcw className="size-3" />
-                        Retake
-                      </ConfirmSubmitButton>
-                    </form>
-                  ) : null}
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-neutral-500">
-                Mulai {formatDateTime(attempt.startedAt)}
-                {attempt.submittedAt ? ` - Submit ${formatDateTime(attempt.submittedAt)}` : ""}
-                {attempt.warningCount > 0 ? ` - Warning ${attempt.warningCount}/3` : ""}
-              </p>
-              {attempt.events && attempt.events.length > 0 ? (
-                <details className="mt-2 rounded-md border border-amber-200 bg-amber-50">
-                  <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-semibold text-amber-900 [&::-webkit-details-marker]:hidden">
-                    <ShieldAlert className="size-4" />
-                    {attempt.events.length} aktivitas exam mode
-                  </summary>
-                  <div className="grid gap-1 border-t border-amber-200 px-3 py-2">
-                    {attempt.events.slice(0, 5).map((event) => (
-                      <p className="text-xs leading-5 text-amber-900" key={event.id}>
-                        <span className="font-semibold">{event.eventType}</span> - {formatDateTime(event.createdAt)}
-                        {event.detail ? ` - ${event.detail}` : ""}
-                      </p>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="border-t border-violet-100 px-3 py-2.5 text-sm text-violet-800">
-          Belum ada attempt untuk kuis ini.
-        </p>
-      )}
-    </details>
   );
 }
 

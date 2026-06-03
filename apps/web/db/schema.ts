@@ -87,6 +87,7 @@ export const profiles = pgTable(
   (table) => [
     uniqueIndex("profiles_email_unique").on(table.email),
     index("profiles_role_idx").on(table.role),
+    index("profiles_created_at_idx").on(table.createdAt),
   ],
 );
 
@@ -106,6 +107,7 @@ export const auditLogs = pgTable(
   },
   (table) => [
     index("audit_logs_actor_id_idx").on(table.actorId),
+    index("audit_logs_actor_role_created_at_idx").on(table.actorRole, table.createdAt),
     index("audit_logs_created_at_idx").on(table.createdAt),
     index("audit_logs_action_idx").on(table.action),
   ],
@@ -728,6 +730,7 @@ export const notifications = pgTable(
   },
   (table) => [
     index("notifications_recipient_id_idx").on(table.recipientId),
+    index("notifications_recipient_created_at_idx").on(table.recipientId, table.createdAt),
     index("notifications_status_idx").on(table.status),
     index("notifications_created_at_idx").on(table.createdAt),
   ],

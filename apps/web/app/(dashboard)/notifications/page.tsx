@@ -15,6 +15,7 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
@@ -76,6 +77,11 @@ function getSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
 function getNotificationPresentation(entityType: string | null) {
   const normalizedEntityType = entityType?.toLocaleLowerCase("id-ID") ?? "";
 
@@ -104,8 +110,8 @@ function getNotificationPresentation(entityType: string | null) {
 
 export default async function NotificationsPage({ searchParams }: NotificationsPageProps) {
   const profile = await requireActiveProfile();
-  const data = await getNotificationCenterData(profile.id);
   const params = await searchParams;
+  const data = await getNotificationCenterData(profile.id, parsePage(getSingleParam(params?.page)));
   const success = getSingleParam(params?.marked_read)
     ? "Notifikasi ditandai sudah dibaca."
     : getSingleParam(params?.marked_all_read)
@@ -189,6 +195,12 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
               emptyMessage="Riwayat notifikasi belum tersedia."
               notifications={readNotifications}
               title="Riwayat notifikasi"
+            />
+            <PaginationControls
+              currentPage={data.pagination.page}
+              pageSize={data.pagination.pageSize}
+              searchParams={params}
+              totalItems={data.pagination.totalItems}
             />
           </div>
         ) : (

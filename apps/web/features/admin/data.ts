@@ -20,6 +20,9 @@ import { db } from "@/lib/db";
 
 export type AdminSearchParams = Record<string, string | string[] | undefined> | undefined;
 
+export const ADMIN_AUDIT_LOG_PAGE_SIZE = 50;
+export const ADMIN_USERS_PAGE_SIZE = 25;
+
 export const defaultSystemSettings = {
   auditRetentionDays: 90,
   plagiarismThresholdPercent: 70,
@@ -30,6 +33,7 @@ export async function getAdminUsersData(searchParams: AdminSearchParams) {
   const query = getSingleParam(searchParams?.q)?.trim() ?? "";
   const role = parseRole(getSingleParam(searchParams?.role));
   const status = parseStatus(getSingleParam(searchParams?.status));
+  const page = parsePage(getSingleParam(searchParams?.page));
   const conditions = [];
 
   if (query) {
@@ -44,30 +48,40 @@ export async function getAdminUsersData(searchParams: AdminSearchParams) {
     conditions.push(eq(profiles.status, status));
   }
 
-  const users = await db
-    .select({
-      createdAt: profiles.createdAt,
-      email: profiles.email,
-      id: profiles.id,
-      lastLoginAt: profiles.lastLoginAt,
-      name: profiles.name,
-      role: profiles.role,
-      status: profiles.status,
-    })
-    .from(profiles)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(profiles.createdAt))
-    .limit(200);
-  const roleCounts = await db
-    .select({
-      role: profiles.role,
-      value: sql<number>`count(*)::int`,
-    })
-    .from(profiles)
-    .groupBy(profiles.role);
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const [users, roleCounts, totalRows] = await Promise.all([
+    db
+      .select({
+        createdAt: profiles.createdAt,
+        email: profiles.email,
+        id: profiles.id,
+        lastLoginAt: profiles.lastLoginAt,
+        name: profiles.name,
+        role: profiles.role,
+        status: profiles.status,
+      })
+      .from(profiles)
+      .where(whereClause)
+      .orderBy(desc(profiles.createdAt))
+      .limit(ADMIN_USERS_PAGE_SIZE)
+      .offset((page - 1) * ADMIN_USERS_PAGE_SIZE),
+    db
+      .select({
+        role: profiles.role,
+        value: sql<number>`count(*)::int`,
+      })
+      .from(profiles)
+      .groupBy(profiles.role),
+    db.select({ value: sql<number>`count(*)::int` }).from(profiles).where(whereClause),
+  ]);
 
   return {
     filters: { query, role, status },
+    pagination: {
+      page,
+      pageSize: ADMIN_USERS_PAGE_SIZE,
+      totalItems: Number(totalRows[0]?.value ?? 0),
+    },
     roleCounts: Object.fromEntries(roleCounts.map((item) => [item.role, Number(item.value)])),
     users,
   };
@@ -76,6 +90,7 @@ export async function getAdminUsersData(searchParams: AdminSearchParams) {
 export async function getAuditLogData(searchParams: AdminSearchParams) {
   const query = getSingleParam(searchParams?.q)?.trim() ?? "";
   const role = parseRole(getSingleParam(searchParams?.role));
+  const page = parsePage(getSingleParam(searchParams?.page));
   const conditions = [];
 
   if (query) {
@@ -91,28 +106,38 @@ export async function getAuditLogData(searchParams: AdminSearchParams) {
     conditions.push(eq(auditLogs.actorRole, role));
   }
 
-  const logs = await db
-    .select({
-      action: auditLogs.action,
-      actorId: auditLogs.actorId,
-      actorName: profiles.name,
-      actorRole: auditLogs.actorRole,
-      createdAt: auditLogs.createdAt,
-      entityId: auditLogs.entityId,
-      entityType: auditLogs.entityType,
-      id: auditLogs.id,
-      ipAddress: auditLogs.ipAddress,
-      metadata: auditLogs.metadata,
-      userAgent: auditLogs.userAgent,
-    })
-    .from(auditLogs)
-    .leftJoin(profiles, eq(profiles.id, auditLogs.actorId))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(150);
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const [logs, totalRows] = await Promise.all([
+    db
+      .select({
+        action: auditLogs.action,
+        actorId: auditLogs.actorId,
+        actorName: profiles.name,
+        actorRole: auditLogs.actorRole,
+        createdAt: auditLogs.createdAt,
+        entityId: auditLogs.entityId,
+        entityType: auditLogs.entityType,
+        id: auditLogs.id,
+        ipAddress: auditLogs.ipAddress,
+        metadata: auditLogs.metadata,
+        userAgent: auditLogs.userAgent,
+      })
+      .from(auditLogs)
+      .leftJoin(profiles, eq(profiles.id, auditLogs.actorId))
+      .where(whereClause)
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(ADMIN_AUDIT_LOG_PAGE_SIZE)
+      .offset((page - 1) * ADMIN_AUDIT_LOG_PAGE_SIZE),
+    db.select({ value: sql<number>`count(*)::int` }).from(auditLogs).where(whereClause),
+  ]);
 
   return {
     filters: { query, role },
+    pagination: {
+      page,
+      pageSize: ADMIN_AUDIT_LOG_PAGE_SIZE,
+      totalItems: Number(totalRows[0]?.value ?? 0),
+    },
     logs,
   };
 }
@@ -277,4 +302,9 @@ function readNumberSetting(value: unknown, fallback: number) {
 
 function getSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
 }
