@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
 import { AuthEditorialPanel } from "@/components/auth/auth-editorial-panel";
+import { DismissibleAlert } from "@/components/ui/dismissible-alert";
 import { LoginForm } from "@/features/auth/login-form";
 import { getCurrentProfile, getDashboardPathForRole } from "@/lib/auth";
 
@@ -64,13 +65,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
 
           {errorMessage ? (
-            <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+            <div className="mt-5">
+              <DismissibleAlert title="Login belum berhasil" tone="danger">
               {errorMessage}
+              </DismissibleAlert>
             </div>
           ) : null}
           {isRegistered ? (
-            <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">
-              Registrasi berhasil. Jika konfirmasi email aktif, cek inbox Anda sebelum login.
+            <div className="mt-5">
+              <DismissibleAlert title="Registrasi berhasil" tone="success">
+                Jika konfirmasi email aktif, cek inbox Anda sebelum login.
+              </DismissibleAlert>
             </div>
           ) : null}
 

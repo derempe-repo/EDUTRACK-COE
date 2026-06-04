@@ -42,3 +42,33 @@ a[href]:focus-visible {
   outline: 3px solid rgb(13 148 136 / 35%);
   outline-offset: 3px;
 }
+
+@keyframes alert-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.alert-enter {
+  animation: alert-enter 180ms ease-out both;
+}
+
+.modal-enter {
+  animation: modal-enter 180ms ease-out both;
+}

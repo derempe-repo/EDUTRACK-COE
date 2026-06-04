@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
 import { AuthEditorialPanel } from "@/components/auth/auth-editorial-panel";
+import { DismissibleAlert } from "@/components/ui/dismissible-alert";
 import { RegisterForm } from "@/features/auth/register-form";
 import { getCurrentProfile, getDashboardPathForRole } from "@/lib/auth";
 
@@ -60,8 +61,10 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           </div>
 
           {errorMessage ? (
-            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
-              {errorMessage}
+            <div className="mt-4">
+              <DismissibleAlert title="Registrasi belum berhasil" tone="danger">
+                {errorMessage}
+              </DismissibleAlert>
             </div>
           ) : null}
 
