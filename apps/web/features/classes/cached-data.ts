@@ -17,7 +17,6 @@ import {
   CLASS_CACHE_REVALIDATE_SECONDS,
   classDataTag,
   dosenDashboardTag,
-  mahasiswaClassTag,
   mahasiswaDashboardTag,
 } from "@/features/classes/cache-tags";
 
@@ -132,8 +131,5 @@ export function getCachedMahasiswaDashboardData(studentId: string) {
 }
 
 export function getCachedMahasiswaClassDetail(studentId: string, classId: string) {
-  return unstable_cache(() => getMahasiswaClassDetail(studentId, classId), ["mahasiswa-class-detail", studentId, classId], {
-    revalidate: CLASS_CACHE_REVALIDATE_SECONDS,
-    tags: [classDataTag(classId), mahasiswaClassTag(studentId, classId), mahasiswaDashboardTag],
-  })();
+  return getMahasiswaClassDetail(studentId, classId);
 }
