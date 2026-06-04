@@ -4,6 +4,7 @@ import { profiles } from "@/db/schema";
 import { getMahasiswaClassDetail } from "@/features/classes/data";
 import { extractIdFromSlugParam } from "@/features/classes/urls";
 import { isMaintenanceJobAuthorized } from "@/features/jobs/maintenance-auth";
+import { getCurrentProfile } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
@@ -19,27 +20,29 @@ export async function GET(request: Request) {
     secretHeader: request.headers.get("x-job-secret"),
   });
 
-  if (!isAuthorized) {
-    return NextResponse.json({ error: "Unauthorized debug request" }, { status: 401 });
-  }
-
   const email = url.searchParams.get("email")?.trim().toLowerCase();
   const classParam = url.searchParams.get("classId")?.trim();
 
-  if (!email || !classParam) {
+  if (!classParam || (isAuthorized && !email)) {
     return NextResponse.json({ error: "Missing email or classId" }, { status: 400 });
   }
 
-  const profile = (
-    await db
-      .select({ id: profiles.id, role: profiles.role, status: profiles.status })
-      .from(profiles)
-      .where(eq(profiles.email, email))
-      .limit(1)
-  )[0];
+  const profile = isAuthorized
+    ? (
+        await db
+          .select({ id: profiles.id, role: profiles.role, status: profiles.status })
+          .from(profiles)
+          .where(eq(profiles.email, email ?? ""))
+          .limit(1)
+      )[0]
+    : await getCurrentProfile();
 
   if (!profile) {
     return NextResponse.json({ ok: false, reason: "profile_not_found" }, { status: 404 });
+  }
+
+  if (profile.role !== "mahasiswa" || profile.status !== "active") {
+    return NextResponse.json({ ok: false, reason: "forbidden" }, { status: 403 });
   }
 
   const classId = extractIdFromSlugParam(classParam);
