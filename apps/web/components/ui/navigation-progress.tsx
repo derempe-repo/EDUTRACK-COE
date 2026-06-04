@@ -4,6 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const MAX_WAIT_MS = 10_000;
+const ignoredApiDownloadPatterns = [
+  /^\/api\/assignments\/[^/]+\/attachment$/,
+  /^\/api\/certificates\/[^/]+\/download$/,
+  /^\/api\/exports\/[^/]+\/download$/,
+  /^\/api\/materials\/[^/]+\/signed-url$/,
+  /^\/api\/submissions\/[^/]+\/signed-url$/,
+];
+
+function isDownloadLikeUrl(url: URL) {
+  return ignoredApiDownloadPatterns.some((pattern) => pattern.test(url.pathname));
+}
 
 function shouldStartNavigationFeedback(anchor: HTMLAnchorElement, event: MouseEvent) {
   if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
@@ -18,6 +29,10 @@ function shouldStartNavigationFeedback(anchor: HTMLAnchorElement, event: MouseEv
     return false;
   }
 
+  if (anchor.closest("[data-no-progress]")) {
+    return false;
+  }
+
   const rawHref = anchor.getAttribute("href");
   if (!rawHref || rawHref.startsWith("#") || rawHref.startsWith("mailto:") || rawHref.startsWith("tel:")) {
     return false;
@@ -27,6 +42,10 @@ function shouldStartNavigationFeedback(anchor: HTMLAnchorElement, event: MouseEv
   const currentUrl = new URL(window.location.href);
 
   if (nextUrl.origin !== currentUrl.origin) {
+    return false;
+  }
+
+  if (isDownloadLikeUrl(nextUrl)) {
     return false;
   }
 

@@ -172,13 +172,16 @@ export default async function DosenClassReportsPage({
                         </p>
                       </div>
                       {exportItem.status === "completed" ? (
-                        <Link
+                        <a
                           className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-700 transition hover:bg-slate-100"
+                          data-no-progress
                           href={`/api/exports/${exportItem.id}/download`}
+                          rel="noreferrer"
+                          target="_blank"
                           title="Unduh export"
                         >
                           <Download className="size-4" />
-                        </Link>
+                        </a>
                       ) : null}
                     </div>
                   ))
@@ -227,13 +230,16 @@ export default async function DosenClassReportsPage({
                       <div className="flex flex-wrap gap-2">
                         {certificate?.status === "issued" ? (
                           <>
-                            <Link
+                            <a
                               className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-50"
+                              data-no-progress
                               href={`/api/certificates/${certificate.id}/download`}
+                              rel="noreferrer"
+                              target="_blank"
                             >
                               <Download className="size-3.5" />
                               Unduh
-                            </Link>
+                            </a>
                             <form action={regenerateCertificatePdfAction}>
                               <input name="classId" type="hidden" value={data.classItem.id} />
                               <input name="studentId" type="hidden" value={member.profileId} />

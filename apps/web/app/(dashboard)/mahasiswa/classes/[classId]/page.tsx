@@ -393,13 +393,16 @@ export default async function MahasiswaClassDetailPage({
               )}
 
               {data.certificate?.status === "issued" ? (
-                <Link
+                <a
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-800"
+                  data-no-progress
                   href={`/api/certificates/${data.certificate.id}/download`}
+                  rel="noreferrer"
+                  target="_blank"
                 >
                   <Download className="size-4" />
                   Unduh sertifikat
-                </Link>
+                </a>
               ) : data.certificateEligibility.isEligible &&
                 (!data.certificate || data.certificate.status === "draft") ? (
                 <form action={syncCertificateEligibilityAction}>
