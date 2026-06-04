@@ -4,13 +4,12 @@ import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { SubmitButton } from "@/components/ui/submit-button";
-import { loginAction } from "@/features/auth/actions";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <form action={loginAction} className="space-y-4">
+    <form action="/auth/login" className="space-y-4" method="post">
       <div className="space-y-2">
         <label className="text-[13px] font-semibold leading-[18px] text-[#264b5a]" htmlFor="email">
           Email
