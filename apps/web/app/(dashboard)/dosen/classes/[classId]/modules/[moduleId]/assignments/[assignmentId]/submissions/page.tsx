@@ -30,6 +30,7 @@ import {
 import {
   allowPlagiarismResubmitAction,
   rejectPermanentPlagiarismAction,
+  rerunPlagiarismCheckAction,
 } from "@/features/plagiarism/actions";
 import { requireRole } from "@/lib/auth";
 
@@ -50,6 +51,14 @@ const submissionStatusLabels = {
   resubmit_allowed: "Resubmit dibuka",
   submitted: "Terkirim",
   under_review: "Direview",
+} as const;
+
+const detectionMethodLabels = {
+  exact_file: "Hash file identik",
+  exact_text: "Hash teks identik",
+  extraction_failed: "Ekstraksi gagal",
+  none: "Tidak ada kemiripan",
+  text_similarity: "Similarity teks",
 } as const;
 
 export default async function DosenAssignmentSubmissionsPage({
@@ -219,20 +228,31 @@ function SubmissionCard({
 
       {submission.plagiarismCheckId ? (
         <div
-          className={`mt-3 rounded-md border px-3 py-2 text-sm ${
-            submission.plagiarismStatus === "flagged"
-              ? "border-red-200 bg-red-50 text-red-900"
-              : "border-emerald-200 bg-emerald-50 text-emerald-900"
-          }`}
+          className={`mt-3 rounded-md border px-3 py-2 text-sm ${getPlagiarismTone(submission.plagiarismStatus)}`}
         >
-          <p className="inline-flex items-center gap-2 font-semibold">
-            <AlertTriangle className="size-4 shrink-0" />
-            Similarity {submission.similarityScore ?? 0}%
-          </p>
-          <p className="mt-1 text-xs leading-5 opacity-80">
-            Threshold {submission.thresholdPercent ?? 70}% - ekstraksi{" "}
-            {submission.extractionStatus ?? "pending"}
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 font-semibold">
+                <AlertTriangle className="size-4 shrink-0" />
+                Similarity {submission.similarityScore ?? 0}%
+              </p>
+              <p className="mt-1 text-xs leading-5 opacity-80">
+                Threshold {submission.thresholdPercent ?? 70}% - metode{" "}
+                {getDetectionMethodLabel(submission.detectionMethod)} - ekstraksi{" "}
+                {submission.extractionStatus ?? "pending"}
+              </p>
+            </div>
+            <form action={rerunPlagiarismCheckAction}>
+              <input name="submissionId" type="hidden" value={submission.id} />
+              <SubmitButton
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-current/20 bg-white/70 px-3 py-2 text-xs font-semibold transition hover:bg-white"
+                pendingLabel="Mengecek..."
+              >
+                <RotateCcw className="size-4" />
+                Cek ulang
+              </SubmitButton>
+            </form>
+          </div>
         </div>
       ) : null}
 
@@ -378,6 +398,30 @@ function TextArea({
       />
     </label>
   );
+}
+
+function getDetectionMethodLabel(value: string | null) {
+  if (!value) {
+    return "Belum tersedia";
+  }
+
+  return detectionMethodLabels[value as keyof typeof detectionMethodLabels] ?? value;
+}
+
+function getPlagiarismTone(status: string) {
+  if (status === "flagged") {
+    return "border-red-200 bg-red-50 text-red-900";
+  }
+
+  if (status === "needs_review") {
+    return "border-amber-200 bg-amber-50 text-amber-900";
+  }
+
+  if (status === "passed") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-900";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-800";
 }
 
 type DateLike = Date | string | null;

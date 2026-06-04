@@ -1037,6 +1037,7 @@ export async function getDosenAssignmentSubmissionsDetail(
         note: submissions.note,
         plagiarismStatus: submissions.plagiarismStatus,
         plagiarismCheckId: plagiarismChecks.id,
+        detectionMethod: plagiarismChecks.detectionMethod,
         similarityScore: plagiarismChecks.similarityScore,
         thresholdPercent: plagiarismChecks.thresholdPercent,
         extractionStatus: plagiarismChecks.extractionStatus,

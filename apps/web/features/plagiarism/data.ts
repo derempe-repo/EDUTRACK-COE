@@ -34,8 +34,10 @@ export async function getDosenClassPlagiarismReport(lecturerId: string, classId:
     .select({
       assignmentTitle: assignments.title,
       checkedAt: plagiarismChecks.checkedAt,
+      detectionMethod: plagiarismChecks.detectionMethod,
       extractionError: plagiarismChecks.extractionError,
       extractionStatus: plagiarismChecks.extractionStatus,
+      fileHash: submissions.fileHash,
       fileName: submissions.fileName,
       id: plagiarismChecks.id,
       moduleTitle: modules.title,
@@ -45,6 +47,7 @@ export async function getDosenClassPlagiarismReport(lecturerId: string, classId:
       studentName: profiles.name,
       submissionId: submissions.id,
       submittedAt: submissions.submittedAt,
+      textHash: submissions.textHash,
       thresholdPercent: plagiarismChecks.thresholdPercent,
     })
     .from(plagiarismChecks)

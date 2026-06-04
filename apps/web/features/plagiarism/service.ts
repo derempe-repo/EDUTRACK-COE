@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, ne } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import {
   notifications,
@@ -9,12 +9,12 @@ import {
 } from "@/db/schema";
 import { db } from "@/lib/db";
 
+import { compareSubmissionAgainstCandidates } from "./detector";
 import { extractSubmissionContent } from "./extractor";
-import { calculateJaccardSimilarity, normalizeSubmissionText } from "./similarity";
+import { hashFileContent, hashTextContent } from "./hashing";
+import { normalizeSubmissionText } from "./similarity";
 
 const DEFAULT_THRESHOLD_PERCENT = 70;
-const MIN_RECORDED_MATCH_PERCENT = 1;
-const MAX_RECORDED_MATCHES = 10;
 
 type RunPlagiarismCheckInput = {
   assignmentId: string;
@@ -24,6 +24,7 @@ type RunPlagiarismCheckInput = {
   note: string | null;
   studentId: string;
   studentName: string;
+  statusWhenNotFlagged?: "keep" | "submitted";
   submissionId: string;
 };
 
@@ -51,48 +52,51 @@ export async function runPlagiarismCheck({
   note,
   studentId,
   studentName,
+  statusWhenNotFlagged = "submitted",
   submissionId,
 }: RunPlagiarismCheckInput) {
   const [extraction, thresholdPercent] = await Promise.all([
     extractSubmissionContent(file, note),
     getPlagiarismThresholdPercent(),
   ]);
+  const fileHash = await hashFileContent(file);
   const submissionText = normalizeSubmissionText(extraction.text);
-  const candidates = submissionText
-    ? await db
-        .select({
-          id: submissions.id,
-          submissionText: submissions.submissionText,
-        })
-        .from(submissions)
-        .where(
-          and(
-            eq(submissions.assignmentId, assignmentId),
-            ne(submissions.id, submissionId),
-            isNotNull(submissions.submissionText),
-          ),
-        )
-    : [];
-  const matches = candidates
-    .map((candidate) => ({
-      matchedSubmissionId: candidate.id,
-      similarityScore: calculateJaccardSimilarity(submissionText, candidate.submissionText ?? ""),
-    }))
-    .filter((match) => match.similarityScore >= MIN_RECORDED_MATCH_PERCENT)
-    .sort((left, right) => right.similarityScore - left.similarityScore)
-    .slice(0, MAX_RECORDED_MATCHES);
-  const similarityScore = matches[0]?.similarityScore ?? 0;
-  const status = similarityScore >= thresholdPercent ? "flagged" : "passed";
+  const textHash = hashTextContent(submissionText);
+  const candidates = await db
+    .select({
+      fileHash: submissions.fileHash,
+      id: submissions.id,
+      submissionText: submissions.submissionText,
+      textHash: submissions.textHash,
+    })
+    .from(submissions)
+    .where(and(eq(submissions.assignmentId, assignmentId), ne(submissions.id, submissionId)));
+  const { detectionMethod, matches, similarityScore, status } =
+    compareSubmissionAgainstCandidates({
+      candidates,
+      extractionStatus: extraction.status,
+      fileHash,
+      submissionText,
+      textHash,
+      thresholdPercent,
+    });
   const now = new Date();
+  const submissionUpdate = {
+    fileHash,
+    plagiarismStatus: status,
+    submissionText,
+    textHash,
+    updatedAt: now,
+    ...(status === "flagged"
+      ? { status: "locked" as const }
+      : statusWhenNotFlagged === "submitted"
+        ? { status: "submitted" as const }
+        : {}),
+  };
 
   await db
     .update(submissions)
-    .set({
-      plagiarismStatus: status,
-      status: status === "flagged" ? "locked" : "submitted",
-      submissionText,
-      updatedAt: now,
-    })
+    .set(submissionUpdate)
     .where(eq(submissions.id, submissionId));
 
   const [check] = await db
@@ -101,6 +105,7 @@ export async function runPlagiarismCheck({
       checkedAt: now,
       extractionError: extraction.error,
       extractionStatus: extraction.status,
+      detectionMethod,
       similarityScore,
       status,
       submissionId,
@@ -112,6 +117,7 @@ export async function runPlagiarismCheck({
         checkedAt: now,
         extractionError: extraction.error,
         extractionStatus: extraction.status,
+        detectionMethod,
         similarityScore,
         status,
         thresholdPercent,
@@ -148,13 +154,26 @@ export async function runPlagiarismCheck({
         title: "Similarity tugas terdeteksi",
       },
     ]);
+  } else if (status === "needs_review") {
+    await db.insert(notifications).values([
+      {
+        body: `Submission tugas "${assignmentTitle}" belum bisa diekstrak penuh dan perlu cek manual dosen.`,
+        entityId: submissionId,
+        entityType: "plagiarism_checks",
+        recipientId: lecturerId,
+        title: "Submission perlu cek manual",
+      },
+    ]);
   }
 
   return {
     checkId: check.id,
+    detectionMethod,
     extractionStatus: extraction.status,
+    fileHash,
     similarityScore,
     status,
+    textHash,
     thresholdPercent,
   };
 }

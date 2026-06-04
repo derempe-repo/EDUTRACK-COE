@@ -663,6 +663,7 @@ export async function submitAssignmentAction(formData: FormData) {
     .values({
       assignmentId: parsed.data.assignmentId,
       fileName: file.name,
+      fileHash: null,
       filePath: storagePath,
       fileSize: file.size,
       mimeType: file.type || "application/octet-stream",
@@ -670,13 +671,16 @@ export async function submitAssignmentAction(formData: FormData) {
       plagiarismStatus: "pending",
       status: "submitted",
       studentId: profile.id,
+      submissionText: null,
       submittedAt: now,
+      textHash: null,
     })
     .onConflictDoUpdate({
       target: [submissions.assignmentId, submissions.studentId],
       set: {
         feedback: null,
         fileName: file.name,
+        fileHash: null,
         filePath: storagePath,
         fileSize: file.size,
         mimeType: file.type || "application/octet-stream",
@@ -686,7 +690,9 @@ export async function submitAssignmentAction(formData: FormData) {
         reviewedBy: null,
         score: null,
         status: "submitted",
+        submissionText: null,
         submittedAt: now,
+        textHash: null,
         updatedAt: now,
       },
     })

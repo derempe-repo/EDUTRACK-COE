@@ -167,6 +167,11 @@ const successMessages: Record<string, FeedbackNotice> = {
     message: "Nilai submission menjadi 0 dan riwayat override sudah dicatat.",
     tone: "success",
   },
+  plagiarism_rechecked: {
+    title: "Plagiasi dicek ulang",
+    message: "Hasil similarity, hash file, dan status ekstraksi submission sudah diperbarui.",
+    tone: "success",
+  },
 };
 
 const errorMessages: Record<string, FeedbackNotice> = {
@@ -393,6 +398,11 @@ const errorMessages: Record<string, FeedbackNotice> = {
   plagiarism_check_not_found: {
     title: "Hasil cek tidak ditemukan",
     message: "Hasil plagiarism tidak tersedia atau Anda tidak memiliki akses untuk mengubahnya.",
+    tone: "danger",
+  },
+  plagiarism_file_download_failed: {
+    title: "File submission belum bisa dibaca",
+    message: "File di storage belum bisa diambil untuk cek ulang. Coba ulangi beberapa saat lagi.",
     tone: "danger",
   },
   plagiarism_module_locked: {

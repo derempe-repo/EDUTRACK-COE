@@ -13,17 +13,28 @@ import {
   notifications,
   plagiarismChecks,
   plagiarismOverrides,
+  profiles,
   submissions,
 } from "@/db/schema";
+import { SUBMISSIONS_BUCKET } from "@/features/assignments/submission-storage";
 import { invalidateClassDataCache } from "@/features/classes/cache-tags";
-import { getDosenModuleAssignmentsPath, getMahasiswaClassPath } from "@/features/classes/urls";
+import {
+  getDosenClassPlagiarismPath,
+  getDosenModuleAssignmentsPath,
+  getMahasiswaClassPath,
+} from "@/features/classes/urls";
+import { runPlagiarismCheck } from "@/features/plagiarism/service";
 import { writeAuditLog } from "@/lib/audit";
 import { type AppProfile, requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 import { z } from "@/lib/validators";
 
 const overrideSchema = z.object({
   reason: z.string().trim().min(10).max(500),
+  submissionId: z.uuid(),
+});
+const rerunSchema = z.object({
   submissionId: z.uuid(),
 });
 
@@ -68,6 +79,48 @@ async function requireManageableFlaggedSubmission(submissionId: string, profile:
   return submission;
 }
 
+async function requireManageableSubmission(submissionId: string, profile: AppProfile) {
+  const rows = await db
+    .select({
+      assignmentId: assignments.id,
+      assignmentTitle: assignments.title,
+      classId: classes.id,
+      classOwnerId: classes.createdBy,
+      classTitle: classes.title,
+      fileName: submissions.fileName,
+      filePath: submissions.filePath,
+      mimeType: submissions.mimeType,
+      moduleId: modules.id,
+      moduleTitle: modules.title,
+      note: submissions.note,
+      status: submissions.status,
+      stepId: moduleSteps.id,
+      studentId: submissions.studentId,
+      studentName: profiles.name,
+      submissionId: submissions.id,
+    })
+    .from(submissions)
+    .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
+    .innerJoin(moduleSteps, eq(moduleSteps.id, assignments.moduleStepId))
+    .innerJoin(modules, eq(modules.id, moduleSteps.moduleId))
+    .innerJoin(classes, eq(classes.id, modules.classId))
+    .innerJoin(profiles, eq(profiles.id, submissions.studentId))
+    .where(eq(submissions.id, submissionId))
+    .limit(1);
+  const submission = rows[0] ?? null;
+  const canManage =
+    submission &&
+    (submission.classOwnerId === profile.id ||
+      profile.role === "admin" ||
+      profile.role === "super_admin");
+
+  if (!submission || !canManage) {
+    redirect(`${dashboardPath(profile)}/?error=plagiarism_check_not_found`);
+  }
+
+  return submission;
+}
+
 function dashboardPath(profile: AppProfile) {
   if (profile.role === "dosen") {
     return "/dosen/dashboard";
@@ -90,6 +143,18 @@ function successPath(
         { id: submission.classId, title: submission.classTitle },
         { id: submission.moduleId, title: submission.moduleTitle },
       )
+    : dashboardPath(profile);
+}
+
+function plagiarismReportPath(
+  profile: AppProfile,
+  submission: {
+    classId: string;
+    classTitle: string;
+  },
+) {
+  return profile.role === "dosen"
+    ? getDosenClassPlagiarismPath({ id: submission.classId, title: submission.classTitle })
     : dashboardPath(profile);
 }
 
@@ -122,6 +187,109 @@ async function recordOverride({
       submission_id: submission.submissionId,
     },
   });
+}
+
+function createStoredSubmissionFile({
+  bytes,
+  fileName,
+  mimeType,
+}: {
+  bytes: ArrayBuffer;
+  fileName: string;
+  mimeType: string;
+}) {
+  return {
+    arrayBuffer: async () => bytes.slice(0),
+    name: fileName,
+    text: async () => new TextDecoder().decode(bytes.slice(0)),
+    type: mimeType,
+  } as File;
+}
+
+export async function rerunPlagiarismCheckAction(formData: FormData) {
+  const profile = await requireRole(["dosen", "admin", "super_admin"]);
+  const parsed = rerunSchema.safeParse({
+    submissionId: formData.get("submissionId"),
+  });
+
+  if (!parsed.success) {
+    redirect(`${dashboardPath(profile)}?error=plagiarism_check_not_found`);
+  }
+
+  const submission = await requireManageableSubmission(parsed.data.submissionId, profile);
+  const supabase = await createClient();
+  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+    .from(SUBMISSIONS_BUCKET)
+    .createSignedUrl(submission.filePath, 60);
+
+  if (signedUrlError || !signedUrlData?.signedUrl) {
+    redirect(plagiarismReportPath(profile, submission) + "?error=plagiarism_file_download_failed");
+  }
+
+  const response = await fetch(signedUrlData.signedUrl, { cache: "no-store" });
+
+  if (!response.ok) {
+    redirect(plagiarismReportPath(profile, submission) + "?error=plagiarism_file_download_failed");
+  }
+
+  const statusWhenNotFlagged =
+    submission.status === "accepted" ||
+    submission.status === "rejected" ||
+    submission.status === "resubmit_allowed"
+      ? "keep"
+      : "submitted";
+  const result = await runPlagiarismCheck({
+    assignmentId: submission.assignmentId,
+    assignmentTitle: submission.assignmentTitle,
+    file: createStoredSubmissionFile({
+      bytes: await response.arrayBuffer(),
+      fileName: submission.fileName,
+      mimeType: submission.mimeType,
+    }),
+    lecturerId: submission.classOwnerId,
+    note: submission.note,
+    statusWhenNotFlagged,
+    studentId: submission.studentId,
+    studentName: submission.studentName,
+    submissionId: submission.submissionId,
+  });
+
+  if (statusWhenNotFlagged === "submitted") {
+    const now = new Date();
+    await db
+      .update(moduleProgress)
+      .set({
+        score: null,
+        status: result.status === "flagged" ? "locked" : "submitted",
+        updatedAt: now,
+        verifiedAt: null,
+      })
+      .where(eq(moduleProgress.submissionId, submission.submissionId));
+  }
+
+  await writeAuditLog({
+    action: "plagiarism.rerun",
+    entityId: result.checkId,
+    entityType: "plagiarism_checks",
+    metadata: {
+      assignment_id: submission.assignmentId,
+      class_id: submission.classId,
+      detection_method: result.detectionMethod,
+      similarity_score: result.similarityScore,
+      status: result.status,
+      submission_id: submission.submissionId,
+    },
+  });
+
+  revalidatePath(plagiarismReportPath(profile, submission));
+  revalidatePath("/mahasiswa/dashboard");
+  revalidatePath(getMahasiswaClassPath({ id: submission.classId, title: submission.classTitle }));
+  invalidateClassDataCache({
+    classId: submission.classId,
+    lecturerId: profile.role === "dosen" ? profile.id : submission.classOwnerId,
+    studentId: submission.studentId,
+  });
+  redirect(plagiarismReportPath(profile, submission) + "?plagiarism_rechecked=1");
 }
 
 export async function allowPlagiarismResubmitAction(formData: FormData) {

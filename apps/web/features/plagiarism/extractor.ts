@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
 import JSZip from "jszip";
 import { PDFParse } from "pdf-parse";
 
@@ -52,8 +56,85 @@ function fallbackToNote(note: string | null, error: string): SubmissionExtractio
   };
 }
 
-async function extractPdf(file: SubmissionFile) {
-  const parser = new PDFParse({ data: new Uint8Array(await file.arrayBuffer()) });
+function findAncestorDirectories(start: string) {
+  const directories: string[] = [];
+  let current = path.resolve(start);
+
+  while (true) {
+    directories.push(current);
+    const parent = path.dirname(current);
+
+    if (parent === current) {
+      return directories;
+    }
+
+    current = parent;
+  }
+}
+
+function resolvePdfWorkerPath() {
+  for (const directory of findAncestorDirectories(process.cwd())) {
+    const directWorkerPath = path.join(
+      directory,
+      "node_modules",
+      "pdfjs-dist",
+      "legacy",
+      "build",
+      "pdf.worker.mjs",
+    );
+
+    if (fs.existsSync(directWorkerPath)) {
+      return directWorkerPath;
+    }
+
+    const pnpmRoot = path.join(directory, "node_modules", ".pnpm");
+    if (!fs.existsSync(pnpmRoot)) {
+      continue;
+    }
+
+    const pdfjsPackage = fs
+      .readdirSync(pnpmRoot, { withFileTypes: true })
+      .find((entry) => entry.isDirectory() && entry.name.startsWith("pdfjs-dist@"));
+
+    if (!pdfjsPackage) {
+      continue;
+    }
+
+    const pnpmWorkerPath = path.join(
+      pnpmRoot,
+      pdfjsPackage.name,
+      "node_modules",
+      "pdfjs-dist",
+      "legacy",
+      "build",
+      "pdf.worker.mjs",
+    );
+
+    if (fs.existsSync(pnpmWorkerPath)) {
+      return pnpmWorkerPath;
+    }
+  }
+
+  return null;
+}
+
+function configurePdfWorker() {
+  const workerPath = resolvePdfWorkerPath();
+
+  if (!workerPath) {
+    throw new Error("PDF worker tidak ditemukan di node_modules aplikasi.");
+  }
+
+  PDFParse.setWorker(pathToFileURL(workerPath).toString());
+}
+
+async function extractPdfFromBytes(bytes: Uint8Array) {
+  configurePdfWorker();
+  const parser = new PDFParse({
+    data: bytes,
+    disableFontFace: true,
+    useWorkerFetch: false,
+  });
 
   try {
     return trimExtractedText((await parser.getText()).text);
@@ -62,8 +143,8 @@ async function extractPdf(file: SubmissionFile) {
   }
 }
 
-async function extractZip(file: SubmissionFile) {
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+async function extractZipFromBytes(bytes: Uint8Array) {
+  const zip = await JSZip.loadAsync(bytes);
   const candidates = Object.values(zip.files)
     .filter((entry) => {
       const segments = entry.name.toLowerCase().split("/");
@@ -97,13 +178,17 @@ export async function extractSubmissionContent(
   note: string | null,
 ): Promise<SubmissionExtraction> {
   const extension = extensionOf(file.name);
+  const bytes =
+    extension === ".pdf" || extension === ".zip"
+      ? new Uint8Array(await file.arrayBuffer())
+      : null;
 
   try {
     const text =
       extension === ".pdf"
-        ? await extractPdf(file)
+        ? await extractPdfFromBytes(bytes ?? new Uint8Array())
         : extension === ".zip"
-          ? await extractZip(file)
+          ? await extractZipFromBytes(bytes ?? new Uint8Array())
           : textExtensions.has(extension)
             ? trimExtractedText(await file.text())
             : "";

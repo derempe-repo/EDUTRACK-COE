@@ -17,6 +17,7 @@ import {
 import {
   allowPlagiarismResubmitAction,
   rejectPermanentPlagiarismAction,
+  rerunPlagiarismCheckAction,
 } from "@/features/plagiarism/actions";
 import { getDosenClassPlagiarismReport } from "@/features/plagiarism/data";
 import { requireRole } from "@/lib/auth";
@@ -28,10 +29,19 @@ type DosenClassPlagiarismPageProps = {
 
 const statusLabels = {
   flagged: "Perlu ditinjau",
+  needs_review: "Cek manual",
   passed: "Lolos",
   pending: "Diproses",
   rejected_permanent: "Ditolak permanen",
   resubmit_allowed: "Resubmit dibuka",
+} as const;
+
+const detectionMethodLabels = {
+  exact_file: "Hash file identik",
+  exact_text: "Hash teks identik",
+  extraction_failed: "Ekstraksi gagal",
+  none: "Tidak ada kemiripan",
+  text_similarity: "Similarity teks",
 } as const;
 
 export default async function DosenClassPlagiarismPage({
@@ -54,6 +64,7 @@ export default async function DosenClassPlagiarismPage({
   }
 
   const flaggedCount = data.checks.filter((check) => check.status === "flagged").length;
+  const needsReviewCount = data.checks.filter((check) => check.status === "needs_review").length;
   const passedCount = data.checks.filter((check) => check.status === "passed").length;
 
   return (
@@ -94,9 +105,10 @@ export default async function DosenClassPlagiarismPage({
 
         <DosenClassNavigation classItem={data.classItem} />
 
-        <section className="grid gap-3 sm:grid-cols-3">
+        <section className="grid gap-3 sm:grid-cols-4">
           <Metric label="Submission dicek" value={data.checks.length} />
           <Metric label="Perlu ditinjau" tone="red" value={flaggedCount} />
+          <Metric label="Cek manual" tone="amber" value={needsReviewCount} />
           <Metric label="Lolos" tone="emerald" value={passedCount} />
         </section>
 
@@ -115,15 +127,34 @@ export default async function DosenClassPlagiarismPage({
                       <Download className="size-4 shrink-0" />
                     </a>
                   </div>
-                  <div className={`w-fit rounded-md border px-3 py-2 text-sm font-semibold ${check.status === "flagged" ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+                  <div className={`w-fit rounded-md border px-3 py-2 text-sm font-semibold ${getStatusTone(check.status)}`}>
                     {check.similarityScore}% - {statusLabels[check.status]}
                   </div>
                 </div>
 
                 <p className="mt-3 text-xs leading-5 text-slate-500">
-                  Threshold {check.thresholdPercent}% - ekstraksi {check.extractionStatus} - dicek {formatDate(check.checkedAt)}
+                  Threshold {check.thresholdPercent}% - metode{" "}
+                  {getDetectionMethodLabel(check.detectionMethod)} -
+                  ekstraksi {check.extractionStatus} - dicek {formatDate(check.checkedAt)}
                 </p>
                 {check.extractionError ? <p className="mt-1 text-xs leading-5 text-amber-700">{check.extractionError}</p> : null}
+                {check.status === "needs_review" ? (
+                  <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-900">
+                    Sistem belum bisa memastikan isi file secara otomatis. Dosen dapat download file,
+                    cek manual, lalu menekan Cek ulang jika parser/hash sudah diperbaiki.
+                  </p>
+                ) : null}
+
+                <form action={rerunPlagiarismCheckAction} className="mt-4">
+                  <input name="submissionId" type="hidden" value={check.submissionId} />
+                  <SubmitButton
+                    className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    pendingLabel="Mengecek ulang..."
+                  >
+                    <RotateCcw className="size-4" />
+                    Cek ulang plagiasi
+                  </SubmitButton>
+                </form>
 
                 <details className="mt-4 rounded-md border border-slate-200 bg-slate-50">
                   <summary className="cursor-pointer px-3 py-3 text-sm font-semibold text-slate-800">Pasangan similarity ({check.matches.length})</summary>
@@ -177,9 +208,29 @@ export default async function DosenClassPlagiarismPage({
   );
 }
 
-function Metric({ label, tone = "slate", value }: { label: string; tone?: "emerald" | "red" | "slate"; value: number }) {
-  const tones = { emerald: "border-emerald-200 bg-emerald-50 text-emerald-800", red: "border-red-200 bg-red-50 text-red-800", slate: "border-slate-200 bg-white text-slate-800" };
+function Metric({ label, tone = "slate", value }: { label: string; tone?: "amber" | "emerald" | "red" | "slate"; value: number }) {
+  const tones = { amber: "border-amber-200 bg-amber-50 text-amber-800", emerald: "border-emerald-200 bg-emerald-50 text-emerald-800", red: "border-red-200 bg-red-50 text-red-800", slate: "border-slate-200 bg-white text-slate-800" };
   return <div className={`rounded-lg border p-4 shadow-sm ${tones[tone]}`}><p className="text-sm font-semibold">{label}</p><p className="mt-2 text-3xl font-semibold">{value}</p></div>;
+}
+
+function getStatusTone(status: keyof typeof statusLabels) {
+  if (status === "flagged") {
+    return "border-red-200 bg-red-50 text-red-800";
+  }
+
+  if (status === "needs_review") {
+    return "border-amber-200 bg-amber-50 text-amber-800";
+  }
+
+  if (status === "passed") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function getDetectionMethodLabel(value: string) {
+  return detectionMethodLabels[value as keyof typeof detectionMethodLabels] ?? value;
 }
 
 function OverrideForm({ action, buttonLabel, submissionId, tone }: { action: (formData: FormData) => void | Promise<void>; buttonLabel: string; submissionId: string; tone: "amber" | "red" }) {
