@@ -242,7 +242,7 @@ const errorMessages: Record<string, FeedbackNotice> = {
   },
   invalid_assignment_file: {
     title: "File tugas tidak sesuai",
-    message: "Lampiran tugas dapat berupa PDF, Word, TXT/MD, ZIP/RAR, HTML/CSS, file kode, atau dokumen LMS lain maksimal 25 MB.",
+    message: "Lampiran tugas dapat berupa PDF, Word, TXT/MD, ZIP/RAR, HTML/CSS, file kode, atau dokumen LMS lain maksimal 4 MB.",
     tone: "danger",
   },
   invalid_submission: {
@@ -252,7 +252,7 @@ const errorMessages: Record<string, FeedbackNotice> = {
   },
   invalid_submission_file: {
     title: "File submission tidak sesuai",
-    message: "Gunakan PDF, Word, TXT/MD, ZIP/RAR, HTML/CSS, file kode, atau dokumen LMS lain maksimal 50 MB.",
+    message: "Gunakan PDF, Word, TXT/MD, ZIP/RAR, HTML/CSS, file kode, atau dokumen LMS lain maksimal 4 MB.",
     tone: "danger",
   },
   invalid_submission_review: {

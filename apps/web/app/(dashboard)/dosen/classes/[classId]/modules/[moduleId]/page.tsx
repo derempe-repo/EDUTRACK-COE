@@ -260,7 +260,7 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
                               type="file"
                             />
                             <span className="block text-xs leading-5 text-neutral-500">
-                              {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 25 MB.
+                              {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 4 MB.
                             </span>
                           </label>
                           <div className="lg:col-span-3">

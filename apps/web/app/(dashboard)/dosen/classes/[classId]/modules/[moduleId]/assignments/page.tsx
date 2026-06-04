@@ -276,7 +276,7 @@ export default async function DosenModuleAssignmentsPage({
                                     type="file"
                                   />
                                   <span className="block text-xs leading-5 text-neutral-500">
-                                    {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 25 MB.
+                                    {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 4 MB.
                                   </span>
                                 </label>
                                 {assignment.attachmentStoragePath ? (
@@ -385,7 +385,7 @@ export default async function DosenModuleAssignmentsPage({
                           type="file"
                         />
                         <span className="block text-xs leading-5 text-neutral-500">
-                          {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 25 MB.
+                          {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 4 MB.
                         </span>
                       </label>
                       <div className="flex items-end">

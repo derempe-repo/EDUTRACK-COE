@@ -81,6 +81,6 @@ describe("material storage helpers", () => {
       type: "application/pdf",
     });
 
-    expect(validateMaterialFile({ file, type: "pdf" })).toBe("Ukuran file materi maksimal 25 MB.");
+    expect(validateMaterialFile({ file, type: "pdf" })).toBe("Ukuran file materi maksimal 4 MB.");
   });
 });

@@ -43,6 +43,6 @@ describe("assignment attachment storage helpers", () => {
       type: "application/pdf",
     });
 
-    expect(validateAssignmentAttachmentFile(file)).toBe("Ukuran file tugas maksimal 25 MB.");
+    expect(validateAssignmentAttachmentFile(file)).toBe("Ukuran file tugas maksimal 4 MB.");
   });
 });

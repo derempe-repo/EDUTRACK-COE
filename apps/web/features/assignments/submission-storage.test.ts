@@ -59,6 +59,6 @@ describe("submission storage helpers", () => {
       type: "application/zip",
     });
 
-    expect(validateSubmissionFile(file)).toBe("Ukuran file submission maksimal 50 MB.");
+    expect(validateSubmissionFile(file)).toBe("Ukuran file submission maksimal 4 MB.");
   });
 });

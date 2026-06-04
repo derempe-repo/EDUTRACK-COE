@@ -1,7 +1,7 @@
 import { isAllowedLmsFile } from "../files/lms-file-types";
 
 export const MATERIALS_BUCKET = "materials";
-export const MATERIAL_FILE_SIZE_LIMIT = 25 * 1024 * 1024;
+export const MATERIAL_FILE_SIZE_LIMIT = 4 * 1024 * 1024;
 
 const allowedMimeTypesByType = {
   pdf: new Set(["application/pdf"]),
@@ -76,7 +76,7 @@ export function validateMaterialFile({
   }
 
   if (file.size > MATERIAL_FILE_SIZE_LIMIT) {
-    return "Ukuran file materi maksimal 25 MB.";
+    return "Ukuran file materi maksimal 4 MB.";
   }
 
   if (type === "file") {

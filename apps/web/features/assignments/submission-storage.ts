@@ -1,7 +1,7 @@
 import { isAllowedLmsFile } from "../files/lms-file-types";
 
 export const SUBMISSIONS_BUCKET = "submissions";
-export const SUBMISSION_FILE_SIZE_LIMIT = 50 * 1024 * 1024;
+export const SUBMISSION_FILE_SIZE_LIMIT = 4 * 1024 * 1024;
 
 export function sanitizeSubmissionFileName(fileName: string) {
   const normalized = fileName
@@ -36,7 +36,7 @@ export function validateSubmissionFile(file: File) {
   }
 
   if (file.size > SUBMISSION_FILE_SIZE_LIMIT) {
-    return "Ukuran file submission maksimal 50 MB.";
+    return "Ukuran file submission maksimal 4 MB.";
   }
 
   if (!isAllowedLmsFile(file)) {

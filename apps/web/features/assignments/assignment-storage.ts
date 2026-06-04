@@ -1,7 +1,7 @@
 import { sanitizeStorageFileName } from "../classes/material-storage";
 import { isAllowedLmsFile } from "../files/lms-file-types";
 
-export const ASSIGNMENT_ATTACHMENT_FILE_SIZE_LIMIT = 25 * 1024 * 1024;
+export const ASSIGNMENT_ATTACHMENT_FILE_SIZE_LIMIT = 4 * 1024 * 1024;
 export const ASSIGNMENT_ATTACHMENTS_BUCKET = "materials";
 
 export function buildAssignmentAttachmentStoragePath({
@@ -24,7 +24,7 @@ export function validateAssignmentAttachmentFile(file: File) {
   }
 
   if (file.size > ASSIGNMENT_ATTACHMENT_FILE_SIZE_LIMIT) {
-    return "Ukuran file tugas maksimal 25 MB.";
+    return "Ukuran file tugas maksimal 4 MB.";
   }
 
   if (!isAllowedLmsFile(file)) {

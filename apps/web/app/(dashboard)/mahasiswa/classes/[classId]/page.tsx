@@ -769,7 +769,7 @@ export default async function MahasiswaClassDetailPage({
                                               type="file"
                                             />
                                             <span className="block text-xs leading-5 text-neutral-500">
-                                              {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 50 MB.
+                                              {LMS_ALLOWED_FILE_DESCRIPTION} Maksimal 4 MB.
                                             </span>
                                           </label>
                                           <label className="block space-y-2">
