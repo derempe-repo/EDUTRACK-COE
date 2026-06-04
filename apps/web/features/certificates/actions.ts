@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { certificates, classes, notifications } from "@/db/schema";
 import { issueEligibleCertificate } from "@/features/certificates/issuer";
+import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { getMahasiswaClassDetail } from "@/features/classes/data";
 import { getDosenClassReportsPath, getMahasiswaClassPath } from "@/features/classes/urls";
 import { writeAuditLog } from "@/lib/audit";
@@ -47,6 +48,7 @@ export async function syncCertificateEligibilityAction(formData: FormData) {
   });
 
   revalidatePath(path);
+  invalidateClassDataCache({ classId: parsed.data.classId, studentId: profile.id });
   redirect(`${path}?certificate_issued=1`);
 }
 
@@ -99,6 +101,7 @@ export async function issueCertificateAction(formData: FormData) {
   });
 
   revalidatePath(classPath);
+  invalidateClassDataCache({ classId: parsed.data.classId, lecturerId: profile.id, studentId: parsed.data.studentId });
   redirect(`${classPath}?certificate_issued=1`);
 }
 
@@ -152,6 +155,7 @@ export async function regenerateCertificatePdfAction(formData: FormData) {
   });
 
   revalidatePath(classPath);
+  invalidateClassDataCache({ classId: parsed.data.classId, lecturerId: profile.id, studentId: parsed.data.studentId });
   redirect(`${classPath}?certificate_regenerated=1`);
 }
 

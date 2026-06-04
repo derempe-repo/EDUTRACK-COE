@@ -6,7 +6,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { PaginationControls } from "@/components/ui/pagination-controls";
-import { getDosenQuizAttemptsDetail } from "@/features/classes/data";
+import { getCachedDosenQuizAttemptsDetail } from "@/features/classes/cached-data";
 import {
   extractIdFromSlugParam,
   getDosenClassPath,
@@ -43,7 +43,7 @@ export default async function DosenQuizAttemptsPage({
   const classId = extractIdFromSlugParam(classParam);
   const moduleId = extractIdFromSlugParam(moduleParam);
   const quizId = extractIdFromSlugParam(quizParam);
-  const data = await getDosenQuizAttemptsDetail(profile.id, classId, moduleId, quizId, {
+  const data = await getCachedDosenQuizAttemptsDetail(profile.id, classId, moduleId, quizId, {
     page: parsePage(getSingleParam(resolvedSearchParams?.page)),
   });
 
@@ -143,7 +143,7 @@ export default async function DosenQuizAttemptsPage({
 function AttemptCard({
   attempt,
 }: {
-  attempt: NonNullable<Awaited<ReturnType<typeof getDosenQuizAttemptsDetail>>>["attempts"][number];
+  attempt: NonNullable<Awaited<ReturnType<typeof getCachedDosenQuizAttemptsDetail>>>["attempts"][number];
 }) {
   return (
     <article className="p-4">
@@ -200,12 +200,19 @@ function AttemptCard({
   );
 }
 
-function formatDateTime(value: Date | null) {
+type DateLike = Date | string | null;
+
+function formatDateTime(value: DateLike) {
   if (!value) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(value);
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function getSingleParam(value: string | string[] | undefined) {

@@ -17,7 +17,7 @@ import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { allowResubmitAction, reviewSubmissionAction } from "@/features/assignments/actions";
-import { getDosenAssignmentSubmissionsDetail } from "@/features/classes/data";
+import { getCachedDosenAssignmentSubmissionsDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   extractIdFromSlugParam,
@@ -65,7 +65,7 @@ export default async function DosenAssignmentSubmissionsPage({
   const classId = extractIdFromSlugParam(classParam);
   const moduleId = extractIdFromSlugParam(moduleParam);
   const assignmentId = extractIdFromSlugParam(assignmentParam);
-  const data = await getDosenAssignmentSubmissionsDetail(profile.id, classId, moduleId, assignmentId, {
+  const data = await getCachedDosenAssignmentSubmissionsDetail(profile.id, classId, moduleId, assignmentId, {
     page: parsePage(getSingleParam(resolvedSearchParams?.page)),
   });
   const feedback = getFeedbackNotice(resolvedSearchParams);
@@ -179,7 +179,7 @@ function SubmissionCard({
   submission,
 }: {
   assignmentMaxScore: number;
-  submission: NonNullable<Awaited<ReturnType<typeof getDosenAssignmentSubmissionsDetail>>>["submissions"][number];
+  submission: NonNullable<Awaited<ReturnType<typeof getCachedDosenAssignmentSubmissionsDetail>>>["submissions"][number];
 }) {
   return (
     <article className="p-4">
@@ -379,12 +379,19 @@ function TextArea({
   );
 }
 
-function formatDateTime(value: Date | null) {
+type DateLike = Date | string | null;
+
+function formatDateTime(value: DateLike) {
   if (!value) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(value);
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function getSingleParam(value: string | string[] | undefined) {

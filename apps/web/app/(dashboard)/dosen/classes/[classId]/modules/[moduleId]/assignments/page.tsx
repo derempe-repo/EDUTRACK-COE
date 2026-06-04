@@ -22,7 +22,7 @@ import {
   deleteAssignmentAction,
   updateAssignmentAction,
 } from "@/features/assignments/actions";
-import { getDosenModuleAssignmentsDetail } from "@/features/classes/data";
+import { getCachedDosenModuleAssignmentsDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   extractIdFromSlugParam,
@@ -42,24 +42,39 @@ type DosenModuleAssignmentsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function formatDateTime(value: Date | null) {
+type DateLike = Date | string | null;
+
+function toDate(value: DateLike) {
   if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateTime(value: DateLike) {
+  const date = toDate(value);
+
+  if (!date) {
     return "Tanpa tenggat";
   }
 
   return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(value);
+  }).format(date);
 }
 
-function formatDateTimeInput(value: Date | null) {
-  if (!value) {
+function formatDateTimeInput(value: DateLike) {
+  const date = toDate(value);
+
+  if (!date) {
     return "";
   }
 
-  const offset = value.getTimezoneOffset();
-  const local = new Date(value.getTime() - offset * 60 * 1000);
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60 * 1000);
   return local.toISOString().slice(0, 16);
 }
 
@@ -72,7 +87,7 @@ export default async function DosenModuleAssignmentsPage({
   const classId = extractIdFromSlugParam(classParam);
   const moduleId = extractIdFromSlugParam(moduleParam);
   const resolvedSearchParams = await searchParams;
-  const data = await getDosenModuleAssignmentsDetail(profile.id, classId, moduleId);
+  const data = await getCachedDosenModuleAssignmentsDetail(profile.id, classId, moduleId);
   const feedback = getFeedbackNotice(resolvedSearchParams);
 
   if (!data) {

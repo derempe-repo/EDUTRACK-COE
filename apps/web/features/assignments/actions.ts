@@ -31,6 +31,7 @@ import {
   getDosenModuleAssignmentsPath,
   getMahasiswaClassPath,
 } from "@/features/classes/urls";
+import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
 import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { runPlagiarismCheck } from "@/features/plagiarism/service";
@@ -378,6 +379,7 @@ export async function createAssignmentAction(formData: FormData) {
 
   revalidatePath(`/dosen/classes/${stepItem.classId}`);
   revalidatePath("/mahasiswa/dashboard");
+  invalidateClassDataCache({ classId: stepItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModuleAssignmentsPath(
       { id: stepItem.classId, title: stepItem.classTitle },
@@ -519,6 +521,7 @@ export async function updateAssignmentAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(`/mahasiswa/classes/${assignment.classId}`);
+  invalidateClassDataCache({ classId: assignment.classId, lecturerId: profile.id });
   redirect(
     getDosenModuleAssignmentsPath(
       { id: assignment.classId, title: assignment.classTitle },
@@ -586,6 +589,7 @@ export async function deleteAssignmentAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(`/mahasiswa/classes/${assignment.classId}`);
+  invalidateClassDataCache({ classId: assignment.classId, lecturerId: profile.id });
   redirect(modulePath + "?assignment_deleted=1");
 }
 
@@ -762,6 +766,7 @@ export async function submitAssignmentAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(`/mahasiswa/classes/${assignment.classId}`);
+  invalidateClassDataCache({ classId: assignment.classId, studentId: profile.id });
   redirect(getMahasiswaClassPath({ id: assignment.classId, title: assignment.classTitle }) + "?submission_submitted=1");
 }
 
@@ -858,6 +863,7 @@ export async function reviewSubmissionAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(`/mahasiswa/classes/${submission.classId}`);
+  invalidateClassDataCache({ classId: submission.classId, lecturerId: profile.id, studentId: submission.studentId });
   redirect(
     getDosenModuleAssignmentsPath(
       { id: submission.classId, title: submission.classTitle },
@@ -928,6 +934,7 @@ export async function allowResubmitAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(`/mahasiswa/classes/${submission.classId}`);
+  invalidateClassDataCache({ classId: submission.classId, lecturerId: profile.id, studentId: submission.studentId });
   redirect(
     getDosenModuleAssignmentsPath(
       { id: submission.classId, title: submission.classTitle },

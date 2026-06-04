@@ -23,6 +23,7 @@ import {
   submissions,
 } from "@/db/schema";
 import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
+import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { getDosenModuleQuizzesPath, getMahasiswaClassPath } from "@/features/classes/urls";
 import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { canStudentAccessQuiz, canSubmitQuizAttempt, isQuestionUsableForQuiz } from "@/features/quizzes/access";
@@ -516,6 +517,7 @@ export async function createQuizAction(formData: FormData) {
 
   revalidatePath(`/dosen/classes/${step.classId}`);
   revalidatePath(`/mahasiswa/classes/${step.classId}`);
+  invalidateClassDataCache({ classId: step.classId, lecturerId: profile.id });
   redirect(
     getDosenModuleQuizzesPath(
       { id: step.classId, title: step.classTitle },
@@ -611,6 +613,7 @@ export async function createFinalExamAction(formData: FormData) {
 
   revalidatePath(`/dosen/classes/${moduleItem.classId}`);
   revalidatePath(`/mahasiswa/classes/${moduleItem.classId}`);
+  invalidateClassDataCache({ classId: moduleItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModuleQuizzesPath(
       { id: moduleItem.classId, title: moduleItem.classTitle },
@@ -712,6 +715,7 @@ export async function updateQuizAction(formData: FormData) {
   });
 
   revalidatePath(`/mahasiswa/classes/${quiz.classId}`);
+  invalidateClassDataCache({ classId: quiz.classId, lecturerId: profile.id });
   redirect(
     getDosenModuleQuizzesPath(
       { id: quiz.classId, title: quiz.classTitle },
@@ -784,6 +788,7 @@ export async function createQuestionAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${step.classId}`);
+  invalidateClassDataCache({ classId: step.classId, lecturerId: profile.id });
   redirect(
     getDosenModuleQuizzesPath(
       { id: step.classId, title: step.classTitle },
@@ -878,6 +883,7 @@ export async function importQuestionsAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${step.classId}`);
+  invalidateClassDataCache({ classId: step.classId, lecturerId: profile.id });
   redirect(`${quizzesPath}?questions_imported=${questionsParsed.data.length}`);
 }
 
@@ -917,6 +923,7 @@ export async function deleteQuestionAction(formData: FormData) {
     },
   });
 
+  invalidateClassDataCache({ classId: question.classId, lecturerId: profile.id });
   redirect(
     getDosenModuleQuizzesPath(
       { id: question.classId, title: question.classTitle },
@@ -1304,6 +1311,7 @@ export async function submitQuizAttemptAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(classPath);
+  invalidateClassDataCache({ classId: attempt.classId, lecturerId: attempt.lecturerId, studentId: profile.id });
   redirect(`/mahasiswa/quizzes/attempts/${parsed.data.attemptId}?submitted=1`);
 }
 
@@ -1366,6 +1374,7 @@ export async function resetQuizAttemptAction(formData: FormData) {
   });
 
   revalidatePath(`/mahasiswa/classes/${attempt.classId}`);
+  invalidateClassDataCache({ classId: attempt.classId, lecturerId: profile.id, studentId: attempt.studentId });
   redirect(
     getDosenModuleQuizzesPath(
       { id: attempt.classId, title: attempt.classTitle },

@@ -11,13 +11,13 @@ import {
 import Link from "next/link";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { getMahasiswaDashboardData } from "@/features/classes/data";
+import { getCachedMahasiswaDashboardData } from "@/features/classes/cached-data";
 import { getMahasiswaClassPath } from "@/features/classes/urls";
 import { requireRole } from "@/lib/auth";
 
 export default async function MahasiswaDashboardPage() {
   const profile = await requireRole(["mahasiswa"]);
-  const data = await getMahasiswaDashboardData(profile.id);
+  const data = await getCachedMahasiswaDashboardData(profile.id);
   const continueClass = data.classes[0] ?? null;
 
   return (

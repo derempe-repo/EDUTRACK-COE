@@ -1,12 +1,12 @@
 import { Activity, BookOpen, Users } from "lucide-react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { getAdminDashboardData } from "@/features/classes/data";
+import { getCachedAdminDashboardData } from "@/features/classes/cached-data";
 import { requireRole } from "@/lib/auth";
 
 export default async function AdminDashboardPage() {
   const profile = await requireRole(["admin"]);
-  const data = await getAdminDashboardData();
+  const data = await getCachedAdminDashboardData();
 
   return (
     <DashboardShell profile={profile} title="Dashboard Admin">

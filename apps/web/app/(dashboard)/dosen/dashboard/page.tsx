@@ -15,7 +15,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
 import { createClassAction } from "@/features/classes/actions";
-import { getDosenDashboardData } from "@/features/classes/data";
+import { getCachedDosenDashboardData } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   getDosenClassPath,
@@ -39,16 +39,21 @@ type DosenDashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function formatDateTime(value: Date) {
+function formatDateTime(value: Date | string) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
   return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(value);
+  }).format(date);
 }
 
 export default async function DosenDashboardPage({ searchParams }: DosenDashboardPageProps) {
   const profile = await requireRole(["dosen"]);
-  const data = await getDosenDashboardData(profile.id);
+  const data = await getCachedDosenDashboardData(profile.id);
   const feedback = getFeedbackNotice(await searchParams);
 
   return (

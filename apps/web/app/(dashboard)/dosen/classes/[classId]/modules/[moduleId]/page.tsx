@@ -29,7 +29,7 @@ import {
   updateModuleAction,
   updateStepAction,
 } from "@/features/classes/actions";
-import { getDosenModuleLearningDetail } from "@/features/classes/data";
+import { getCachedDosenModuleLearningDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   extractIdFromSlugParam,
@@ -54,7 +54,7 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
   const { classId: classParam, moduleId: moduleParam } = await params;
   const classId = extractIdFromSlugParam(classParam);
   const moduleId = extractIdFromSlugParam(moduleParam);
-  const data = await getDosenModuleLearningDetail(profile.id, classId, moduleId);
+  const data = await getCachedDosenModuleLearningDetail(profile.id, classId, moduleId);
   const feedback = getFeedbackNotice(await searchParams);
 
   if (!data) {

@@ -9,7 +9,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
 import { createModuleAction } from "@/features/classes/actions";
-import { getDosenClassDetail } from "@/features/classes/data";
+import { getCachedDosenClassDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   extractIdFromSlugParam,
@@ -32,7 +32,7 @@ export default async function DosenClassDetailPage({ params, searchParams }: Cla
   const profile = await requireRole(["dosen"]);
   const { classId: classParam } = await params;
   const classId = extractIdFromSlugParam(classParam);
-  const data = await getDosenClassDetail(profile.id, classId);
+  const data = await getCachedDosenClassDetail(profile.id, classId);
   const feedback = getFeedbackNotice(await searchParams);
 
   if (!data) {

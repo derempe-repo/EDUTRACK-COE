@@ -25,6 +25,7 @@ import {
   getDosenModulePath,
   getMahasiswaClassPath,
 } from "@/features/classes/urls";
+import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { writeAuditLog } from "@/lib/audit";
 import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -218,6 +219,7 @@ export async function createClassAction(formData: FormData) {
   });
 
   revalidatePath("/dosen/dashboard");
+  invalidateClassDataCache({ classId: classItem.id, lecturerId: profile.id });
   redirect(getDosenClassPath({ id: classItem.id, title: parsed.data.title }));
 }
 
@@ -281,6 +283,7 @@ export async function updateClassAction(formData: FormData) {
 
   revalidatePath("/dosen/dashboard");
   revalidatePath(`/dosen/classes/${parsed.data.classId}`);
+  invalidateClassDataCache({ classId: parsed.data.classId, lecturerId: profile.id });
   redirect(getDosenClassSettingsPath({ id: classItem.id, title: parsed.data.title }) + "?saved=1");
 }
 
@@ -309,6 +312,7 @@ export async function deleteClassAction(formData: FormData) {
   });
 
   revalidatePath("/dosen/dashboard");
+  invalidateClassDataCache({ classId: parsed.data.classId, lecturerId: profile.id });
   redirect("/dosen/dashboard?deleted=1");
 }
 
@@ -358,6 +362,7 @@ export async function createModuleAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${parsed.data.classId}`);
+  invalidateClassDataCache({ classId: parsed.data.classId, lecturerId: profile.id });
   redirect(
     getDosenModulePath(classItem, { id: moduleItem.id, title: parsed.data.title }) + "?module_created=1",
   );
@@ -386,6 +391,7 @@ export async function deleteModuleAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${moduleItem.classId}`);
+  invalidateClassDataCache({ classId: moduleItem.classId, lecturerId: profile.id });
   redirect(
     getDosenClassPath({ id: moduleItem.classId, title: moduleItem.classTitle }) +
       "?module_deleted=1",
@@ -438,6 +444,7 @@ export async function updateModuleAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${moduleItem.classId}`);
+  invalidateClassDataCache({ classId: moduleItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModulePath(
       { id: moduleItem.classId, title: moduleItem.classTitle },
@@ -492,6 +499,7 @@ export async function createStepAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${moduleItem.classId}`);
+  invalidateClassDataCache({ classId: moduleItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModulePath(
       { id: moduleItem.classId, title: moduleItem.classTitle },
@@ -523,6 +531,7 @@ export async function deleteStepAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${stepItem.classId}`);
+  invalidateClassDataCache({ classId: stepItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModulePath(
       { id: stepItem.classId, title: stepItem.classTitle },
@@ -577,6 +586,7 @@ export async function updateStepAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${stepItem.classId}`);
+  invalidateClassDataCache({ classId: stepItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModulePath(
       { id: stepItem.classId, title: stepItem.classTitle },
@@ -689,6 +699,7 @@ export async function createMaterialAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${stepItem.classId}`);
+  invalidateClassDataCache({ classId: stepItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModulePath(
       { id: stepItem.classId, title: stepItem.classTitle },
@@ -731,6 +742,7 @@ export async function deleteMaterialAction(formData: FormData) {
   });
 
   revalidatePath(`/dosen/classes/${materialItem.classId}`);
+  invalidateClassDataCache({ classId: materialItem.classId, lecturerId: profile.id });
   redirect(
     getDosenModulePath(
       { id: materialItem.classId, title: materialItem.classTitle },
@@ -781,6 +793,7 @@ export async function markMaterialReadAction(formData: FormData) {
 
   revalidatePath(`/mahasiswa/classes/${material.classId}`);
   revalidatePath("/mahasiswa/dashboard");
+  invalidateClassDataCache({ classId: material.classId, studentId: profile.id });
   redirect(getMahasiswaClassPath({ id: material.classId, title: material.classTitle }) + "?material_read=1");
 }
 
@@ -842,6 +855,7 @@ export async function enrollStudentAction(formData: FormData) {
   revalidatePath(`/dosen/classes/${parsed.data.classId}`);
   revalidatePath("/dosen/dashboard");
   revalidatePath("/mahasiswa/dashboard");
+  invalidateClassDataCache({ classId: parsed.data.classId, lecturerId: profile.id, studentId: student.id });
   redirect(getDosenClassMembersPath(classItem) + "?student_enrolled=1");
 }
 
@@ -894,5 +908,6 @@ export async function removeClassMemberAction(formData: FormData) {
   revalidatePath(`/dosen/classes/${parsed.data.classId}`);
   revalidatePath("/dosen/dashboard");
   revalidatePath("/mahasiswa/dashboard");
+  invalidateClassDataCache({ classId: parsed.data.classId, lecturerId: profile.id, studentId: member.profileId });
   redirect(getDosenClassMembersPath(classItem) + "?member_removed=1");
 }

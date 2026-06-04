@@ -11,7 +11,7 @@ import {
   issueCertificateAction,
   regenerateCertificatePdfAction,
 } from "@/features/certificates/actions";
-import { getDosenClassDetail } from "@/features/classes/data";
+import { getCachedDosenClassDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   extractIdFromSlugParam,
@@ -28,15 +28,22 @@ type DosenClassReportsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function formatDateTime(value: Date | null) {
+type DateLike = Date | string | null;
+
+function formatDateTime(value: DateLike) {
   if (!value) {
+    return "-";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
     return "-";
   }
 
   return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(value);
+  }).format(date);
 }
 
 export default async function DosenClassReportsPage({
@@ -46,7 +53,7 @@ export default async function DosenClassReportsPage({
   const profile = await requireRole(["dosen"]);
   const { classId: classParam } = await params;
   const classId = extractIdFromSlugParam(classParam);
-  const data = await getDosenClassDetail(profile.id, classId);
+  const data = await getCachedDosenClassDetail(profile.id, classId);
   const feedback = getFeedbackNotice(await searchParams);
 
   if (!data) {

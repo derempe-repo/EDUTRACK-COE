@@ -15,6 +15,7 @@ import {
   plagiarismOverrides,
   submissions,
 } from "@/db/schema";
+import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { getDosenModuleAssignmentsPath, getMahasiswaClassPath } from "@/features/classes/urls";
 import { writeAuditLog } from "@/lib/audit";
 import { type AppProfile, requireRole } from "@/lib/auth";
@@ -170,6 +171,11 @@ export async function allowPlagiarismResubmitAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(getMahasiswaClassPath({ id: submission.classId, title: submission.classTitle }));
+  invalidateClassDataCache({
+    classId: submission.classId,
+    lecturerId: profile.role === "dosen" ? profile.id : submission.classOwnerId,
+    studentId: submission.studentId,
+  });
   redirect(successPath(profile, submission) + "?plagiarism_resubmit_allowed=1");
 }
 
@@ -223,5 +229,10 @@ export async function rejectPermanentPlagiarismAction(formData: FormData) {
 
   revalidatePath("/mahasiswa/dashboard");
   revalidatePath(getMahasiswaClassPath({ id: submission.classId, title: submission.classTitle }));
+  invalidateClassDataCache({
+    classId: submission.classId,
+    lecturerId: profile.role === "dosen" ? profile.id : submission.classOwnerId,
+    studentId: submission.studentId,
+  });
   redirect(successPath(profile, submission) + "?plagiarism_rejected=1");
 }

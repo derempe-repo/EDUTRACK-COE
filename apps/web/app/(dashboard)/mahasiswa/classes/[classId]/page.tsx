@@ -29,7 +29,7 @@ import { submitAssignmentAction } from "@/features/assignments/actions";
 import { syncCertificateEligibilityAction } from "@/features/certificates/actions";
 import { canShowStudentModuleContent } from "@/features/classes/access";
 import { markMaterialReadAction } from "@/features/classes/actions";
-import { getMahasiswaClassDetail } from "@/features/classes/data";
+import { getCachedMahasiswaClassDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import { extractIdFromSlugParam, getMahasiswaClassPath } from "@/features/classes/urls";
 import { LMS_ALLOWED_FILE_DESCRIPTION, LMS_FILE_ACCEPT } from "@/features/files/lms-file-types";
@@ -86,15 +86,32 @@ const quizAttemptStatusLabels = {
   submitted: "Selesai",
 } as const;
 
-function formatDateTime(value: Date | null) {
+type DateLike = Date | string | null;
+
+function toDate(value: DateLike) {
   if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dateTimestamp(value: DateLike) {
+  return toDate(value)?.getTime() ?? null;
+}
+
+function formatDateTime(value: DateLike) {
+  const date = toDate(value);
+
+  if (!date) {
     return "Tanpa tenggat";
   }
 
   return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(value);
+  }).format(date);
 }
 
 function canSubmitAgain(status: keyof typeof submissionStatusLabels | null) {
@@ -108,7 +125,7 @@ export default async function MahasiswaClassDetailPage({
   const profile = await requireRole(["mahasiswa"]);
   const { classId: classParam } = await params;
   const classId = extractIdFromSlugParam(classParam);
-  const data = await getMahasiswaClassDetail(profile.id, classId);
+  const data = await getCachedMahasiswaClassDetail(profile.id, classId);
   const feedback = getFeedbackNotice(await searchParams);
 
   if (!data) {
@@ -623,9 +640,8 @@ export default async function MahasiswaClassDetailPage({
                               {step.assignments.map((assignment) => {
                                 const submission = assignment.submission;
                                 const isSubmittable = canSubmitAgain(submission?.status ?? null);
-                                const isPastDue = assignment.dueAt
-                                  ? assignment.dueAt.getTime() < nowMs
-                                  : false;
+                                const dueAtMs = dateTimestamp(assignment.dueAt);
+                                const isPastDue = dueAtMs !== null ? dueAtMs < nowMs : false;
                                 const canUploadNow =
                                   isSubmittable &&
                                   (!isPastDue || submission?.status === "resubmit_allowed");
@@ -796,9 +812,11 @@ export default async function MahasiswaClassDetailPage({
                             <div className="grid gap-3 sm:pl-4">
                               {step.quizzes.map((quiz) => {
                                 const attempt = quiz.attempt;
+                                const attemptExpiresAtMs = dateTimestamp(attempt?.expiresAt ?? null);
                                 const canContinue =
                                   attempt?.status === "started" &&
-                                  attempt.expiresAt.getTime() > nowMs;
+                                  attemptExpiresAtMs !== null &&
+                                  attemptExpiresAtMs > nowMs;
 
                                 return (
                                   <article
@@ -1030,10 +1048,14 @@ function FinalExamCard({
 }: {
   canStart: boolean;
   nowMs: number;
-  quiz: NonNullable<NonNullable<Awaited<ReturnType<typeof getMahasiswaClassDetail>>>["modules"][number]["finalExam"]>;
+  quiz: NonNullable<NonNullable<Awaited<ReturnType<typeof getCachedMahasiswaClassDetail>>>["modules"][number]["finalExam"]>;
 }) {
   const attempt = quiz.attempt;
-  const canContinue = attempt?.status === "started" && attempt.expiresAt.getTime() > nowMs;
+  const attemptExpiresAtMs = dateTimestamp(attempt?.expiresAt ?? null);
+  const canContinue =
+    attempt?.status === "started" &&
+    attemptExpiresAtMs !== null &&
+    attemptExpiresAtMs > nowMs;
   const canRetake = attempt?.status === "reset" || attempt?.status === "expired";
 
   return (

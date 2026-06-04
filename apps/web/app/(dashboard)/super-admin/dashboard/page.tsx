@@ -1,12 +1,12 @@
 import { Activity, BookOpen, ShieldCheck, Users } from "lucide-react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { getSuperAdminDashboardData } from "@/features/classes/data";
+import { getCachedSuperAdminDashboardData } from "@/features/classes/cached-data";
 import { requireRole } from "@/lib/auth";
 
 export default async function SuperAdminDashboardPage() {
   const profile = await requireRole(["super_admin"]);
-  const data = await getSuperAdminDashboardData();
+  const data = await getCachedSuperAdminDashboardData();
 
   return (
     <DashboardShell profile={profile} title="Dashboard Super Admin">

@@ -16,7 +16,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
-import { getDosenModuleDetail } from "@/features/classes/data";
+import { getCachedDosenModuleDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   extractIdFromSlugParam,
@@ -52,7 +52,7 @@ export default async function DosenModuleQuizzesPage({
   const classId = extractIdFromSlugParam(classParam);
   const moduleId = extractIdFromSlugParam(moduleParam);
   const resolvedSearchParams = await searchParams;
-  const data = await getDosenModuleDetail(profile.id, classId, moduleId);
+  const data = await getCachedDosenModuleDetail(profile.id, classId, moduleId);
   const feedback = getFeedbackNotice(resolvedSearchParams);
 
   if (!data) {
