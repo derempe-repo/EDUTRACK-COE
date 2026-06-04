@@ -263,6 +263,17 @@ export default async function MahasiswaClassDetailPage({
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
+                <div className="mt-4 grid gap-2 text-xs font-semibold text-teal-950 sm:grid-cols-3">
+                  <span className="rounded-md border border-teal-200 bg-white px-3 py-2">
+                    {data.classProgress.verified} selesai
+                  </span>
+                  <span className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sky-800">
+                    {data.classProgress.submitted} menunggu review
+                  </span>
+                  <span className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+                    {data.classProgress.failed} perlu perbaikan
+                  </span>
+                </div>
                 {nextLearningTarget ? (
                   <div className="mt-4 flex flex-col gap-3 border-t border-teal-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">

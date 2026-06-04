@@ -26,6 +26,7 @@ import {
 } from "@/db/schema";
 import { getCertificateEligibility } from "@/features/certificates/eligibility";
 import { calculateWeightedClassScore } from "@/features/grades/class-score";
+import { combineProgressSummaries, getProgressSummary, type ProgressSummary } from "@/features/progress/summary";
 import { db } from "@/lib/db";
 
 type CountRow = {
@@ -1120,11 +1121,12 @@ export async function getMahasiswaDashboardData(studentId: string) {
   let materialRows: Array<{ classId: string; id: string }> = [];
   let materialReadRows: Array<{ classId: string; materialId: string }> = [];
   let assignmentRows: Array<{ classId: string; id: string }> = [];
-  let acceptedSubmissionRows: Array<{
+  let submissionRows: Array<{
     assignmentId: string;
     classId: string;
     maxScore: number;
     score: number | null;
+    status: "draft" | "submitted" | "under_review" | "accepted" | "rejected" | "locked" | "resubmit_allowed";
   }> = [];
   let quizRows: Array<{ classId: string; id: string; passingScore: number }> = [];
   let quizAttemptRows: Array<{
@@ -1189,13 +1191,14 @@ export async function getMahasiswaDashboardData(studentId: string) {
             ),
     ]);
 
-    [acceptedSubmissionRows, quizRows, quizAttemptRows, gradeRows] = await Promise.all([
+    [submissionRows, quizRows, quizAttemptRows, gradeRows] = await Promise.all([
       db
         .select({
           assignmentId: submissions.assignmentId,
           classId: modules.classId,
           maxScore: assignments.maxScore,
           score: submissions.score,
+          status: submissions.status,
         })
         .from(submissions)
         .innerJoin(assignments, eq(assignments.id, submissions.assignmentId))
@@ -1206,7 +1209,6 @@ export async function getMahasiswaDashboardData(studentId: string) {
             inArray(modules.classId, classIds),
             eq(modules.isLocked, false),
             eq(submissions.studentId, studentId),
-            eq(submissions.status, "accepted"),
           ),
         ),
       db
@@ -1261,82 +1263,61 @@ export async function getMahasiswaDashboardData(studentId: string) {
     ]);
   }
 
-  const progressByClass = new Map<
-    string,
-    { completed: number; failed: number; submitted: number; total: number; verified: number }
-  >();
-  const ensureClassProgress = (classId: string) => {
-    const current = progressByClass.get(classId) ?? {
-      completed: 0,
-      failed: 0,
-      submitted: 0,
-      total: 0,
-      verified: 0,
-    };
-    progressByClass.set(classId, current);
-    return current;
-  };
-
-  for (const item of [...materialRows, ...assignmentRows, ...quizRows]) {
-    const current = ensureClassProgress(item.classId);
-    current.total += 1;
-  }
-
+  const acceptedSubmissionRows = submissionRows.filter((submission) => submission.status === "accepted");
+  const submissionByAssignment = new Map(submissionRows.map((submission) => [submission.assignmentId, submission]));
   const readMaterialIds = new Set(materialReadRows.map((read) => read.materialId));
-  for (const material of materialRows) {
-    if (!readMaterialIds.has(material.id)) {
-      continue;
-    }
-    const current = ensureClassProgress(material.classId);
-    current.completed += 1;
-    current.verified += 1;
-  }
-
-  const acceptedAssignmentIds = new Set(acceptedSubmissionRows.map((submission) => submission.assignmentId));
-  for (const assignment of assignmentRows) {
-    if (!acceptedAssignmentIds.has(assignment.id)) {
-      continue;
-    }
-    const current = ensureClassProgress(assignment.classId);
-    current.completed += 1;
-    current.verified += 1;
-  }
-
   const attemptsByQuiz = new Map<string, typeof quizAttemptRows>();
   for (const attempt of quizAttemptRows) {
     const current = attemptsByQuiz.get(attempt.quizId) ?? [];
     current.push(attempt);
     attemptsByQuiz.set(attempt.quizId, current);
   }
-  for (const quiz of quizRows) {
-    const quizAttemptsForStudent = attemptsByQuiz.get(quiz.id) ?? [];
-    const current = ensureClassProgress(quiz.classId);
-    const hasPassed = quizAttemptsForStudent.some(
-      (attempt) => attempt.status === "submitted" && (attempt.score ?? 0) >= quiz.passingScore,
-    );
-    const hasSubmitted = quizAttemptsForStudent.some((attempt) => attempt.status === "submitted");
-    const hasFailed = quizAttemptsForStudent.some(
-      (attempt) => attempt.status === "submitted" && (attempt.score ?? 0) < quiz.passingScore,
-    );
 
-    if (hasPassed) {
-      current.completed += 1;
-      current.verified += 1;
-    } else if (hasSubmitted) {
-      current.submitted += 1;
-    } else if (hasFailed) {
-      current.failed += 1;
-    }
+  const progressByClass = new Map<string, ProgressSummary>();
+  for (const classItem of enrolledClasses) {
+    const classMaterials = materialRows.filter((material) => material.classId === classItem.id);
+    const classAssignments = assignmentRows.filter((assignment) => assignment.classId === classItem.id);
+    const classQuizzes = quizRows.filter((quiz) => quiz.classId === classItem.id);
+
+    progressByClass.set(
+      classItem.id,
+      getProgressSummary({
+        acceptedAssignments: classAssignments.filter(
+          (assignment) => submissionByAssignment.get(assignment.id)?.status === "accepted",
+        ).length,
+        failedAssignments: classAssignments.filter((assignment) => {
+          const status = submissionByAssignment.get(assignment.id)?.status;
+          return status === "rejected" || status === "locked";
+        }).length,
+        failedQuizzes: classQuizzes.filter((quiz) => {
+          const attempts = attemptsByQuiz.get(quiz.id) ?? [];
+          const hasPassed = attempts.some(
+            (attempt) => attempt.status === "submitted" && (attempt.score ?? 0) >= quiz.passingScore,
+          );
+          const hasFailed = attempts.some(
+            (attempt) => attempt.status === "submitted" && (attempt.score ?? 0) < quiz.passingScore,
+          );
+          return !hasPassed && hasFailed;
+        }).length,
+        passedQuizzes: classQuizzes.filter((quiz) =>
+          (attemptsByQuiz.get(quiz.id) ?? []).some(
+            (attempt) => attempt.status === "submitted" && (attempt.score ?? 0) >= quiz.passingScore,
+          ),
+        ).length,
+        readMaterials: classMaterials.filter((material) => readMaterialIds.has(material.id)).length,
+        requiredAssignments: classAssignments.length,
+        requiredMaterials: classMaterials.length,
+        requiredQuizzes: classQuizzes.length,
+        submittedAssignments: classAssignments.filter((assignment) => {
+          const status = submissionByAssignment.get(assignment.id)?.status;
+          return status === "submitted" || status === "under_review";
+        }).length,
+      }),
+    );
   }
 
-  const totalProgressPercent =
-    [...progressByClass.values()].reduce((sum, item) => sum + item.total, 0) > 0
-      ? Math.round(
-          ([...progressByClass.values()].reduce((sum, item) => sum + item.completed, 0) /
-            [...progressByClass.values()].reduce((sum, item) => sum + item.total, 0)) *
-            100,
-        )
-      : 0;
+  const totalProgress = combineProgressSummaries([...progressByClass.values()]);
+  const totalProgressPercent = totalProgress.percent;
   const classScores = enrolledClasses.map((classItem) =>
     calculateWeightedClassScore({
       assignmentScores: acceptedSubmissionRows
@@ -1362,27 +1343,14 @@ export async function getMahasiswaDashboardData(studentId: string) {
     stats: {
       totalProgressPercent,
       averageScore,
-      badgesCount: Math.floor([...progressByClass.values()].reduce((sum, item) => sum + item.completed, 0) / 3),
-      gamificationPoints: [...progressByClass.values()].reduce((sum, item) => sum + item.completed, 0) * 10,
+      badgesCount: Math.floor(totalProgress.completed / 3),
+      gamificationPoints: totalProgress.completed * 10,
       activeModulesCount: activeModules.length,
     },
     classes: enrolledClasses.map((item) => ({
       ...item,
       moduleCount: moduleCounts.get(item.id) ?? 0,
-      progress: {
-        failed: progressByClass.get(item.id)?.failed ?? 0,
-        percent:
-          (progressByClass.get(item.id)?.total ?? 0) > 0
-            ? Math.round(
-                ((progressByClass.get(item.id)?.completed ?? 0) /
-                  (progressByClass.get(item.id)?.total ?? 1)) *
-                  100,
-              )
-            : 0,
-        submitted: progressByClass.get(item.id)?.submitted ?? 0,
-        total: progressByClass.get(item.id)?.total ?? 0,
-        verified: progressByClass.get(item.id)?.verified ?? 0,
-      },
+      progress: progressByClass.get(item.id) ?? getProgressSummary({}),
     })),
     activeModules,
     notifications: notificationRows,
@@ -1817,8 +1785,18 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
       const acceptedAssignments = moduleAssignments.filter(
         (assignment) => assignment.submission?.status === "accepted",
       ).length;
+      const submittedAssignments = moduleAssignments.filter(
+        (assignment) =>
+          assignment.submission?.status === "submitted" || assignment.submission?.status === "under_review",
+      ).length;
+      const failedAssignments = moduleAssignments.filter(
+        (assignment) => assignment.submission?.status === "rejected" || assignment.submission?.status === "locked",
+      ).length;
       const passedQuizzes = moduleQuizzes.filter(
         (quiz) => quiz.attempt?.status === "submitted" && (quiz.attempt.score ?? 0) >= quiz.passingScore,
+      ).length;
+      const failedQuizzes = moduleQuizzes.filter(
+        (quiz) => quiz.attempt?.status === "submitted" && (quiz.attempt.score ?? 0) < quiz.passingScore,
       ).length;
       const finalExam = finalExamRows.find((quiz) => quiz.moduleId === moduleItem.id) ?? null;
       const finalAttempt = finalExam ? (finalAttemptByQuiz.get(finalExam.id) ?? null) : null;
@@ -1826,9 +1804,24 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
         finalExam && finalAttempt?.status === "submitted" && (finalAttempt.score ?? 0) >= finalExam.passingScore
           ? 1
           : 0;
-      const requiredCompletionCount =
-        moduleMaterials.length + moduleAssignments.length + moduleQuizzes.length + (finalExam ? 1 : 0);
-      const completedCount = readMaterials + acceptedAssignments + passedQuizzes + finalExamPassed;
+      const finalExamFailed =
+        finalExam && finalAttempt?.status === "submitted" && (finalAttempt.score ?? 0) < finalExam.passingScore
+          ? 1
+          : 0;
+      const progressSummary = getProgressSummary({
+        acceptedAssignments,
+        failedAssignments,
+        failedFinalExams: finalExamFailed,
+        failedQuizzes,
+        passedFinalExams: finalExamPassed,
+        passedQuizzes,
+        readMaterials,
+        requiredAssignments: moduleAssignments.length,
+        requiredFinalExams: finalExam ? 1 : 0,
+        requiredMaterials: moduleMaterials.length,
+        requiredQuizzes: moduleQuizzes.length,
+        submittedAssignments,
+      });
       const isPlagiarismLocked =
         firstFlaggedModuleSortOrder !== null && moduleItem.sortOrder > firstFlaggedModuleSortOrder;
 
@@ -1837,23 +1830,24 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
         isLocked: moduleItem.isLocked || isPlagiarismLocked,
         lockReason: isPlagiarismLocked ? "plagiarism" : moduleItem.isLocked ? "manual" : null,
         completion: {
+          ...progressSummary,
           acceptedAssignments,
-          completedCount,
+          completedCount: progressSummary.completed,
+          failedAssignments,
+          failedFinalExams: finalExamFailed,
+          failedQuizzes,
           finalExamPassed,
           passedQuizzes,
-          percent:
-            requiredCompletionCount > 0
-              ? Math.round((completedCount / requiredCompletionCount) * 100)
-              : 0,
           readMaterials,
           readyForFinalExam:
             moduleMaterials.length + moduleAssignments.length + moduleQuizzes.length ===
             readMaterials + acceptedAssignments + passedQuizzes,
           requiredAssignments: moduleAssignments.length,
-          requiredCompletionCount,
+          requiredCompletionCount: progressSummary.total,
           requiredFinalExams: finalExam ? 1 : 0,
           requiredMaterials: moduleMaterials.length,
           requiredQuizzes: moduleQuizzes.length,
+          submittedAssignments,
         },
         finalExam: finalExam
           ? {
@@ -1865,19 +1859,7 @@ export async function getMahasiswaClassDetail(studentId: string, classId: string
       };
     });
 
-  const classCompletedCount = modulesWithCompletion.reduce(
-    (sum, moduleItem) => sum + moduleItem.completion.completedCount,
-    0,
-  );
-  const classRequiredCount = modulesWithCompletion.reduce(
-    (sum, moduleItem) => sum + moduleItem.completion.requiredCompletionCount,
-    0,
-  );
-  const classProgress = {
-    completed: classCompletedCount,
-    percent: classRequiredCount > 0 ? Math.round((classCompletedCount / classRequiredCount) * 100) : 0,
-    total: classRequiredCount,
-  };
+  const classProgress = combineProgressSummaries(modulesWithCompletion.map((moduleItem) => moduleItem.completion));
   const certificateEligibility = getCertificateEligibility({
     completed: classProgress.completed,
     modulePercents: modulesWithCompletion.map((moduleItem) => moduleItem.completion.percent),
