@@ -32,7 +32,6 @@ import {
   getMahasiswaClassPath,
 } from "@/features/classes/urls";
 import { invalidateClassDataCache } from "@/features/classes/cache-tags";
-import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
 import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { runPlagiarismCheck } from "@/features/plagiarism/service";
 import { writeAuditLog } from "@/lib/audit";
@@ -865,6 +864,7 @@ export async function reviewSubmissionAction(formData: FormData) {
     },
   });
 
+  const { tryIssueEligibleCertificate } = await import("@/features/certificates/issuer");
   await tryIssueEligibleCertificate(submission.studentId, submission.classId);
 
   revalidatePath("/mahasiswa/dashboard");

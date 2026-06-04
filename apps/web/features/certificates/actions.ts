@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { certificates, classes, notifications } from "@/db/schema";
-import { issueEligibleCertificate } from "@/features/certificates/issuer";
 import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { getMahasiswaClassDetail } from "@/features/classes/data";
 import { getDosenClassReportsPath, getMahasiswaClassPath } from "@/features/classes/urls";
@@ -31,6 +30,7 @@ export async function syncCertificateEligibilityAction(formData: FormData) {
   }
 
   const path = getMahasiswaClassPath(data.classItem);
+  const { issueEligibleCertificate } = await import("@/features/certificates/issuer");
   const result = await issueEligibleCertificate(profile.id, parsed.data.classId);
 
   if (!result.issued && result.reason !== "already_issued") {
@@ -82,6 +82,7 @@ export async function issueCertificateAction(formData: FormData) {
     redirect("/dosen/dashboard?error=class_not_found");
   }
 
+  const { issueEligibleCertificate } = await import("@/features/certificates/issuer");
   const result = await issueEligibleCertificate(parsed.data.studentId, parsed.data.classId);
   const classPath = getDosenClassReportsPath(classItem);
 
@@ -135,6 +136,7 @@ export async function regenerateCertificatePdfAction(formData: FormData) {
     redirect("/dosen/dashboard?error=class_not_found");
   }
 
+  const { issueEligibleCertificate } = await import("@/features/certificates/issuer");
   const result = await issueEligibleCertificate(parsed.data.studentId, parsed.data.classId, {
     forceRegenerate: true,
   });

@@ -31,7 +31,6 @@ import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "@/lib/validators";
-import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
 import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
 import { gradeWeightsTotal } from "@/features/grades/class-score";
 
@@ -789,6 +788,7 @@ export async function markMaterialReadAction(formData: FormData) {
     },
   });
 
+  const { tryIssueEligibleCertificate } = await import("@/features/certificates/issuer");
   await tryIssueEligibleCertificate(profile.id, material.classId);
 
   revalidatePath(`/mahasiswa/classes/${material.classId}`);

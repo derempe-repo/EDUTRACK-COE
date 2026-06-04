@@ -22,7 +22,6 @@ import {
   quizzes,
   submissions,
 } from "@/db/schema";
-import { tryIssueEligibleCertificate } from "@/features/certificates/issuer";
 import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { getDosenModuleQuizzesPath, getMahasiswaClassPath } from "@/features/classes/urls";
 import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
@@ -1307,6 +1306,7 @@ export async function submitQuizAttemptAction(formData: FormData) {
     },
   });
 
+  const { tryIssueEligibleCertificate } = await import("@/features/certificates/issuer");
   await tryIssueEligibleCertificate(profile.id, attempt.classId);
 
   revalidatePath("/mahasiswa/dashboard");
