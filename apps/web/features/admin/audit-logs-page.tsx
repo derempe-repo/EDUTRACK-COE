@@ -2,6 +2,7 @@ import { Search, ScrollText } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { getAuditLogData, type AdminSearchParams } from "@/features/admin/data";
 import { getAdminBasePath } from "@/features/admin/urls";
 import type { AppProfile } from "@/lib/auth";
@@ -58,9 +59,12 @@ export async function AdminAuditLogsPage({
           <option value="admin">Admin</option>
           <option value="super_admin">Super Admin</option>
         </select>
-        <button className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800" type="submit">
+        <SubmitButton
+          className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+          pendingLabel="Menerapkan..."
+        >
           Terapkan
-        </button>
+        </SubmitButton>
       </form>
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">

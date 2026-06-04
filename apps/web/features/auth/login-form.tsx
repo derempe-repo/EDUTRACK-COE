@@ -3,6 +3,7 @@
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { useState } from "react";
 
+import { SubmitButton } from "@/components/ui/submit-button";
 import { loginAction } from "@/features/auth/actions";
 
 export function LoginForm() {
@@ -59,13 +60,13 @@ export function LoginForm() {
         </div>
       </div>
 
-      <button
+      <SubmitButton
         className="flex h-[50px] w-full items-center justify-center gap-2.5 rounded-lg bg-[#123044] px-4 text-sm font-bold text-white transition hover:bg-[#1a4359] focus:outline-none focus:ring-2 focus:ring-[#0e7490]/30 focus:ring-offset-2"
-        type="submit"
+        pendingLabel="Masuk..."
       >
         Masuk ke dashboard
         <ArrowRight aria-hidden="true" className="size-4" strokeWidth={2} />
-      </button>
+      </SubmitButton>
     </form>
   );
 }

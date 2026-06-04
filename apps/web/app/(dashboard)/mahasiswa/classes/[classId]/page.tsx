@@ -25,6 +25,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { submitAssignmentAction } from "@/features/assignments/actions";
 import { syncCertificateEligibilityAction } from "@/features/certificates/actions";
 import { canShowStudentModuleContent } from "@/features/classes/access";
@@ -618,13 +619,13 @@ export default async function MahasiswaClassDetailPage({
                                   ) : (
                                     <form action={markMaterialReadAction}>
                                       <input name="materialId" type="hidden" value={material.id} />
-                                      <button
+                                      <SubmitButton
                                         className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300 bg-white px-3 py-2 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 sm:w-fit"
-                                        type="submit"
+                                        pendingLabel="Menandai..."
                                       >
                                         <CheckCircle2 className="size-4" />
                                         Tandai selesai
-                                      </button>
+                                      </SubmitButton>
                                     </form>
                                   )}
                                 </div>
@@ -778,13 +779,13 @@ export default async function MahasiswaClassDetailPage({
                                               placeholder="Catatan singkat untuk dosen."
                                             />
                                           </label>
-                                          <button
+                                          <SubmitButton
                                             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                                            type="submit"
+                                            pendingLabel="Mengirim..."
                                           >
                                             <Upload className="size-4" />
                                             Kirim submission
-                                          </button>
+                                          </SubmitButton>
                                         </form>
                                       </details>
                                     ) : (
@@ -887,14 +888,14 @@ export default async function MahasiswaClassDetailPage({
                                     ) : (
                                       <form action={startQuizAction} className="mt-4">
                                         <input name="quizId" type="hidden" value={quiz.id} />
-                                        <button
+                                        <SubmitButton
                                           className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                                          type="submit"
+                                          pendingLabel="Menyiapkan kuis..."
                                         >
                                           {attempt?.status === "reset" || attempt?.status === "expired"
                                             ? "Mulai ulang kuis"
                                             : "Mulai kuis"}
-                                        </button>
+                                        </SubmitButton>
                                       </form>
                                     )}
                                   </article>
@@ -1124,12 +1125,12 @@ function FinalExamCard({
       ) : (
         <form action={startQuizAction} className="mt-4">
           <input name="quizId" type="hidden" value={quiz.id} />
-          <button
+          <SubmitButton
             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-            type="submit"
+            pendingLabel="Menyiapkan exam..."
           >
             {canRetake ? "Mulai ulang final exam" : "Mulai final exam"}
-          </button>
+          </SubmitButton>
         </form>
       )}
     </article>

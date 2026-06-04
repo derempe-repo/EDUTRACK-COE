@@ -4,6 +4,8 @@ import { AlertTriangle, CheckCircle2, Loader2, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
+import { cn } from "@/lib/utils";
+
 type ConfirmSubmitButtonProps = {
   cancelLabel?: string;
   children: ReactNode;
@@ -71,7 +73,7 @@ export function ConfirmSubmitButton({
     <>
       <button
         aria-busy={pending}
-        className={className}
+        className={cn(className, "disabled:cursor-wait disabled:opacity-70")}
         disabled={pending}
         onClick={(event) => {
           if (bypassConfirmationRef.current) {

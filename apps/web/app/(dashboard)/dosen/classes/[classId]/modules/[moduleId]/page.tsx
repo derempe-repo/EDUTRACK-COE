@@ -20,6 +20,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import {
   createMaterialAction,
   createStepAction,
@@ -270,13 +271,13 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
                             />
                           </div>
                           <div className="flex justify-end lg:col-span-3">
-                            <button
+                            <SubmitButton
                               className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                              type="submit"
+                              pendingLabel="Menambahkan..."
                             >
                               <Upload className="size-4" />
                               Tambah materi
-                            </button>
+                            </SubmitButton>
                           </div>
                         </form>
                       </details>
@@ -318,13 +319,13 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
                               />
                             </div>
                             <div className="flex items-end">
-                              <button
+                              <SubmitButton
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                                type="submit"
+                                pendingLabel="Menyimpan..."
                               >
                                 <Save className="size-4" />
                                 Simpan step
-                              </button>
+                              </SubmitButton>
                             </div>
                           </form>
                           <form action={deleteStepAction}>
@@ -377,13 +378,13 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
                   <input defaultChecked name="isRequired" type="checkbox" />
                   Wajib
                 </label>
-                <button
+                <SubmitButton
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b]"
-                  type="submit"
+                  pendingLabel="Membuat step..."
                 >
                   <Plus className="size-4" />
                   Buat step
-                </button>
+                </SubmitButton>
               </div>
             </form>
 
@@ -444,13 +445,13 @@ export default async function DosenModulePage({ params, searchParams }: DosenMod
                     />
                     Terkunci
                   </label>
-                  <button
+                  <SubmitButton
                     className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                    type="submit"
+                    pendingLabel="Menyimpan..."
                   >
                     <Save className="size-4" />
                     Simpan modul
-                  </button>
+                  </SubmitButton>
                 </form>
                 <form action={deleteModuleAction}>
                   <input name="moduleId" type="hidden" value={data.moduleItem.id} />

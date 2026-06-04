@@ -43,6 +43,10 @@ a[href]:focus-visible {
   outline-offset: 3px;
 }
 
+html[data-navigation-pending="true"] a[href] {
+  cursor: progress;
+}
+
 @keyframes alert-enter {
   from {
     opacity: 0;

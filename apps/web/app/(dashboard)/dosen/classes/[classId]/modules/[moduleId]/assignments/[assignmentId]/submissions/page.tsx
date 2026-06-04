@@ -16,6 +16,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { allowResubmitAction, reviewSubmissionAction } from "@/features/assignments/actions";
 import { getCachedDosenAssignmentSubmissionsDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
@@ -248,13 +249,13 @@ function SubmissionCard({
             >
               <input name="submissionId" type="hidden" value={submission.id} />
               <TextArea label="Alasan perbaikan" name="reason" />
-              <button
+              <SubmitButton
                 className="mt-3 inline-flex items-center justify-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
-                type="submit"
+                pendingLabel="Membuka ulang..."
               >
                 <RotateCcw className="size-4" />
                 Izinkan ulang upload
-              </button>
+              </SubmitButton>
             </form>
             <form
               action={rejectPermanentPlagiarismAction}
@@ -305,13 +306,13 @@ function SubmissionCard({
             />
             <TextArea defaultValue={submission.feedback ?? ""} label="Feedback" name="feedback" />
             <div className="flex items-end">
-              <button
+              <SubmitButton
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                type="submit"
+                pendingLabel="Memverifikasi..."
               >
                 <CheckCircle2 className="size-4" />
                 Verifikasi
-              </button>
+              </SubmitButton>
             </div>
           </form>
         </details>
@@ -320,13 +321,13 @@ function SubmissionCard({
       {submission.status === "rejected" || submission.status === "resubmit_allowed" ? (
         <form action={allowResubmitAction} className="mt-3">
           <input name="submissionId" type="hidden" value={submission.id} />
-          <button
+          <SubmitButton
             className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-50"
-            type="submit"
+            pendingLabel="Membuka resubmit..."
           >
             <RotateCcw className="size-4" />
             Buka resubmit
-          </button>
+          </SubmitButton>
         </form>
       ) : null}
     </article>

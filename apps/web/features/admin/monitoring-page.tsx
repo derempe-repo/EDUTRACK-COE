@@ -2,6 +2,7 @@ import { Activity, AlertTriangle, Bell, BookOpenCheck, Download, FileText, FileW
 
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { getMonitoringData } from "@/features/admin/data";
 import { getAdminBasePath } from "@/features/admin/urls";
 import {
@@ -170,9 +171,12 @@ function AdminOverrideForm({ action, label, submissionId, tone }: { action: (for
           <AlertTriangle className="size-4" />{label}
         </ConfirmSubmitButton>
       ) : (
-        <button className="mt-2 inline-flex items-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100" type="submit">
+        <SubmitButton
+          className="mt-2 inline-flex items-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+          pendingLabel="Membuka ulang..."
+        >
           <RotateCcw className="size-4" />{label}
-        </button>
+        </SubmitButton>
       )}
     </form>
   );

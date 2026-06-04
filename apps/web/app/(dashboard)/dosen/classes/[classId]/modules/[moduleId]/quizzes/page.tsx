@@ -16,6 +16,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { getCachedDosenModuleDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
@@ -171,13 +172,13 @@ export default async function DosenModuleQuizzesPage({
                       </label>
                     </div>
                     <TextArea defaultValue={finalExam.description ?? ""} label="Deskripsi final exam" name="description" />
-                    <button
+                    <SubmitButton
                       className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                      type="submit"
+                      pendingLabel="Menyimpan..."
                     >
                       <Save className="size-4" />
                       Simpan final exam
-                    </button>
+                    </SubmitButton>
                   </form>
                 </details>
               </article>
@@ -217,13 +218,13 @@ export default async function DosenModuleQuizzesPage({
                   </label>
                 </div>
                 <TextArea label="Deskripsi final exam" name="description" />
-                <button
+                <SubmitButton
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                  type="submit"
+                  pendingLabel="Membuat final exam..."
                 >
                   <Plus className="size-4" />
                   Buat final exam
-                </button>
+                </SubmitButton>
               </form>
             </details>
           )}
@@ -342,13 +343,13 @@ export default async function DosenModuleQuizzesPage({
                                     label="Deskripsi kuis"
                                     name="description"
                                   />
-                                  <button
+                                  <SubmitButton
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                                    type="submit"
+                                    pendingLabel="Menyimpan..."
                                   >
                                     <Save className="size-4" />
                                     Simpan
-                                  </button>
+                                  </SubmitButton>
                                 </form>
 
                               </div>
@@ -401,13 +402,13 @@ export default async function DosenModuleQuizzesPage({
                           </label>
                         </div>
                         <TextArea label="Deskripsi kuis" name="description" />
-                        <button
+                        <SubmitButton
                           className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                          type="submit"
+                          pendingLabel="Membuat kuis..."
                         >
                           <Plus className="size-4" />
                           Buat kuis
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
                   </section>
@@ -535,13 +536,13 @@ export default async function DosenModuleQuizzesPage({
                           </label>
                           <Field defaultValue="1" label="Bobot" name="weight" type="number" />
                         </div>
-                        <button
+                        <SubmitButton
                           className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                          type="submit"
+                          pendingLabel="Menambah soal..."
                         >
                           <Plus className="size-4" />
                           Tambah soal
-                        </button>
+                        </SubmitButton>
                       </form>
                     </details>
                   </section>

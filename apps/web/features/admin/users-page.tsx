@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { updateManagedProfileAction } from "@/features/admin/actions";
 import { getAdminUsersData, type AdminSearchParams } from "@/features/admin/data";
 import { getAdminFeedbackNotice } from "@/features/admin/feedback";
@@ -74,9 +75,12 @@ export async function AdminUsersPage({
           <option value="active">Aktif</option>
           <option value="inactive">Nonaktif</option>
         </select>
-        <button className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800" type="submit">
+        <SubmitButton
+          className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+          pendingLabel="Menerapkan..."
+        >
           Terapkan
-        </button>
+        </SubmitButton>
       </form>
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">

@@ -8,6 +8,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { deleteClassAction, updateClassAction } from "@/features/classes/actions";
 import { getCachedDosenClassDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
@@ -133,13 +134,13 @@ export default async function DosenClassSettingsPage({
                   />
                 </div>
               </div>
-              <button
+              <SubmitButton
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b] sm:w-auto"
-                type="submit"
+                pendingLabel="Menyimpan..."
               >
                 <Save className="size-4" />
                 Simpan perubahan
-              </button>
+              </SubmitButton>
             </form>
           </section>
 

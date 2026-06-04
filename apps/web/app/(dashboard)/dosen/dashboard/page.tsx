@@ -14,6 +14,7 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { createClassAction } from "@/features/classes/actions";
 import { getCachedDosenDashboardData } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
@@ -251,13 +252,13 @@ export default async function DosenDashboardPage({ searchParams }: DosenDashboar
                   <option value="archived">Archived</option>
                 </select>
               </label>
-              <button
-                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b]"
-                type="submit"
-              >
-                <Plus className="size-4" />
-                Buat kelas
-              </button>
+            <SubmitButton
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b]"
+              pendingLabel="Membuat kelas..."
+            >
+              <Plus className="size-4" />
+              Buat kelas
+            </SubmitButton>
             </div>
           </form>
         </section>

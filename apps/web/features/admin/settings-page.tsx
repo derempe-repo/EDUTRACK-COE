@@ -2,6 +2,7 @@ import { LockKeyhole, Settings, ShieldCheck } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { updateSystemSettingsAction } from "@/features/admin/actions";
 import { getSystemSettingsData, type AdminSearchParams } from "@/features/admin/data";
 import { getAdminFeedbackNotice } from "@/features/admin/feedback";
@@ -92,9 +93,12 @@ export async function AdminSettingsPage({
           </div>
 
           {canEdit ? (
-            <button className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800" type="submit">
+            <SubmitButton
+              className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              pendingLabel="Menyimpan..."
+            >
               Simpan pengaturan
-            </button>
+            </SubmitButton>
           ) : (
             <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
               Mode baca saja untuk Admin. Hubungi Super Admin untuk perubahan.

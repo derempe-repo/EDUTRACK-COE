@@ -8,6 +8,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { createModuleAction } from "@/features/classes/actions";
 import { getCachedDosenClassDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
@@ -177,13 +178,13 @@ export default async function DosenClassDetailPage({ params, searchParams }: Cla
                   <input name="isLocked" type="checkbox" />
                   Terkunci
                 </label>
-                <button
+                <SubmitButton
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b]"
-                  type="submit"
+                  pendingLabel="Membuat modul..."
                 >
                   <Plus className="size-4" />
                   Buat modul
-                </button>
+                </SubmitButton>
               </div>
             </form>
 

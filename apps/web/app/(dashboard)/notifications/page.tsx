@@ -15,6 +15,7 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   markAllNotificationsReadAction,
@@ -303,13 +304,13 @@ function NotificationRow({ notification }: { notification: NotificationItem }) {
         {isUnread ? (
           <form action={markNotificationReadAction} className="shrink-0 sm:ml-auto">
             <input name="notificationId" type="hidden" value={notification.id} />
-            <button
+            <SubmitButton
               className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800 sm:w-fit"
-              type="submit"
+              pendingLabel="Menandai..."
             >
               <CheckCheck className="size-4" />
               Tandai dibaca
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
       </div>

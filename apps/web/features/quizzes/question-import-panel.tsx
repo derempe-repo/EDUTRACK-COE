@@ -3,6 +3,7 @@
 import { ChevronDown, Download, FileSpreadsheet, LoaderCircle, RotateCcw, Upload } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 
+import { SubmitButton } from "@/components/ui/submit-button";
 import { importQuestionsAction } from "@/features/quizzes/actions";
 import type { QuestionImportPreview } from "@/features/quizzes/question-import";
 
@@ -204,13 +205,13 @@ export function QuestionImportPanel({ stepId }: { stepId: string }) {
               <form action={importQuestionsAction}>
                 <input name="payload" type="hidden" value={payload} />
                 <input name="stepId" type="hidden" value={stepId} />
-                <button
+                <SubmitButton
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-fit"
-                  type="submit"
+                  pendingLabel="Menyimpan soal..."
                 >
                   <Upload className="size-4" />
                   Simpan {preview.validCount} soal
-                </button>
+                </SubmitButton>
               </form>
             ) : preview.rows.length > 0 ? (
               <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-900">

@@ -17,6 +17,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import {
   createAssignmentAction,
   deleteAssignmentAction,
@@ -285,13 +286,13 @@ export default async function DosenModuleAssignmentsPage({
                                   </label>
                                 ) : null}
                                 <div className="flex items-end">
-                                  <button
+                                  <SubmitButton
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                                    type="submit"
+                                    pendingLabel="Menyimpan..."
                                   >
                                     <Save className="size-4" />
                                     Simpan
-                                  </button>
+                                  </SubmitButton>
                                 </div>
                               </form>
                               <form action={deleteAssignmentAction}>
@@ -388,13 +389,13 @@ export default async function DosenModuleAssignmentsPage({
                         </span>
                       </label>
                       <div className="flex items-end">
-                        <button
+                        <SubmitButton
                           className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                          type="submit"
+                          pendingLabel="Membuat tugas..."
                         >
                           <Plus className="size-4" />
                           Buat tugas
-                        </button>
+                        </SubmitButton>
                       </div>
                     </form>
                   </details>

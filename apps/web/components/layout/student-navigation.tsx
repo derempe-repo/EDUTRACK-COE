@@ -1,9 +1,10 @@
 "use client";
 
-import { Bell, BookOpen, LayoutDashboard, LogOut } from "lucide-react";
+import { Bell, BookOpen, LayoutDashboard, Loader2, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { SubmitButton } from "@/components/ui/submit-button";
 import { logoutAction } from "@/features/auth/actions";
 import { cn } from "@/lib/utils";
 
@@ -114,13 +115,18 @@ export function StudentMobileNavigation({
         );
       })}
       <form action={logoutAction}>
-        <button
+        <SubmitButton
           className="flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-md px-1 text-[11px] font-semibold text-slate-500 transition hover:text-slate-800"
-          type="submit"
+          pendingChildren={
+            <>
+              <Loader2 className="size-[18px] animate-spin" />
+              <span>Keluar...</span>
+            </>
+          }
         >
           <LogOut className="size-[18px]" />
           <span>Keluar</span>
-        </button>
+        </SubmitButton>
       </form>
     </nav>
   );

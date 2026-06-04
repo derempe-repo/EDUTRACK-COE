@@ -8,6 +8,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { enrollStudentAction, removeClassMemberAction } from "@/features/classes/actions";
 import { getCachedDosenClassDetail } from "@/features/classes/cached-data";
 import { getFeedbackNotice } from "@/features/classes/feedback";
@@ -118,12 +119,12 @@ export default async function DosenClassMembersPage({
                   placeholder="Cari nama atau email mahasiswa"
                 />
               </label>
-              <button
+              <SubmitButton
                 className="inline-flex items-center justify-center rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b]"
-                type="submit"
+                pendingLabel="Mencari..."
               >
                 Cari
-              </button>
+              </SubmitButton>
             </form>
 
             <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -221,13 +222,13 @@ export default async function DosenClassMembersPage({
                   type="email"
                 />
               </label>
-              <button
+              <SubmitButton
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#123044] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a425b]"
-                type="submit"
+                pendingLabel="Mendaftarkan..."
               >
                 <UserPlus className="size-4" />
                 Enroll mahasiswa
-              </button>
+              </SubmitButton>
             </div>
           </form>
         </section>

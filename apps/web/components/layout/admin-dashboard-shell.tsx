@@ -1,4 +1,4 @@
-import { BookOpen, LogOut } from "lucide-react";
+import { BookOpen, Loader2, LogOut } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -14,6 +14,7 @@ import {
 import { logoutAction } from "@/features/auth/actions";
 import { getAdminBasePath } from "@/features/admin/urls";
 import type { AppProfile } from "@/lib/auth";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type AdminDashboardShellProps = {
   children: ReactNode;
@@ -57,13 +58,14 @@ export function AdminDashboardShell({
               <p className="mt-0.5 text-xs text-sky-100/60">{roleLabel}</p>
             </div>
             <form action={logoutAction}>
-              <button
+              <SubmitButton
+                aria-label="Keluar"
                 className="inline-flex size-9 items-center justify-center rounded-md text-sky-100/70 transition hover:bg-white/10 hover:text-white"
+                pendingChildren={<Loader2 className="size-4 animate-spin" />}
                 title="Keluar"
-                type="submit"
               >
                 <LogOut className="size-4" />
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>

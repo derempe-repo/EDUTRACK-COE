@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { DismissibleAlert } from "@/components/ui/dismissible-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { getFeedbackNotice } from "@/features/classes/feedback";
 import {
   extractIdFromSlugParam,
@@ -195,9 +196,12 @@ function OverrideForm({ action, buttonLabel, submissionId, tone }: { action: (fo
           <AlertTriangle className="size-4" />{buttonLabel}
         </ConfirmSubmitButton>
       ) : (
-        <button className="mt-3 inline-flex items-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100" type="submit">
+        <SubmitButton
+          className="mt-3 inline-flex items-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+          pendingLabel="Membuka ulang..."
+        >
           <RotateCcw className="size-4" />{buttonLabel}
-        </button>
+        </SubmitButton>
       )}
     </form>
   );
