@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: EDUTRACK COE
+          - paragraph [ref=e10]: Ruang belajar digital
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: BELAJAR DENGAN ARAH YANG JELAS
+        - paragraph [ref=e13]: Satu ruang untuk terus bertumbuh.
+        - paragraph [ref=e14]: Akses materi, selesaikan tugas, dan lihat kemajuan belajar Anda dalam alur yang lebih tenang dan terarah.
+      - generic [ref=e15]:
+        - img "Mahasiswa belajar bersama menggunakan laptop di perpustakaan kampus" [ref=e16]
+        - paragraph [ref=e18]: RUANG UNTUK BELAJAR DAN BERTUMBUH
+      - paragraph [ref=e21]: BELAJAR / BERLATIH / BERTUMBUH
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - paragraph [ref=e25]: PORTAL PEMBELAJARAN
+        - heading "Selamat datang kembali." [level=2] [ref=e26]
+        - paragraph [ref=e27]: Masuk untuk melanjutkan materi, tugas, dan pencapaian belajar Anda.
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - text: Email
+          - generic [ref=e31]:
+            - img [ref=e32]
+            - textbox "Email" [ref=e35]:
+              - /placeholder: nama@email.com
+        - generic [ref=e36]:
+          - text: Password
+          - generic [ref=e37]:
+            - img [ref=e38]
+            - textbox "Password" [ref=e42]:
+              - /placeholder: ........
+            - button "Tampilkan password" [ref=e43]:
+              - img [ref=e44]
+        - button "Masuk ke dashboard" [ref=e47]:
+          - text: Masuk ke dashboard
+          - img [ref=e48]
+      - paragraph [ref=e50]:
+        - text: Belum punya akun mahasiswa?
+        - link "Daftar sekarang" [ref=e51] [cursor=pointer]:
+          - /url: /register
+      - generic [ref=e52]:
+        - img [ref=e53]
+        - paragraph [ref=e56]: Akses aman untuk akun terdaftar EduTrack COE.
+  - alert [ref=e57]

@@ -4,9 +4,10 @@ import { profiles } from "@/db/schema";
 import { getMahasiswaClassDetail } from "@/features/classes/data";
 import { extractIdFromSlugParam } from "@/features/classes/urls";
 import { isMaintenanceJobAuthorized } from "@/features/jobs/maintenance-auth";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing email or classId" }, { status: 400 });
   }
 
+  const cookieStore = await cookies();
+  const cookieNames = cookieStore.getAll().map((cookie) => cookie.name);
+  const user = await getCurrentUser();
   const profile = isAuthorized
     ? (
         await db
@@ -38,7 +42,16 @@ export async function GET(request: Request) {
     : await getCurrentProfile();
 
   if (!profile) {
-    return NextResponse.json({ ok: false, reason: "profile_not_found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        cookieNames,
+        ok: false,
+        reason: "profile_not_found",
+        userFound: Boolean(user),
+        userId: user?.id ?? null,
+      },
+      { status: 404 },
+    );
   }
 
   if (profile.role !== "mahasiswa" || profile.status !== "active") {

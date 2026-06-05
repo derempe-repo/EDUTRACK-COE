@@ -1,0 +1,152 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: EDUTRACK COE
+          - paragraph [ref=e10]: Ruang belajar digital
+      - generic [ref=e11]: Menu Utama
+      - navigation "Navigasi mahasiswa" [ref=e12]:
+        - link "Dashboard" [ref=e13] [cursor=pointer]:
+          - /url: /mahasiswa/dashboard
+          - img [ref=e15]
+          - generic [ref=e20]: Dashboard
+        - link "Kelas Saya" [ref=e21] [cursor=pointer]:
+          - /url: /mahasiswa/dashboard#kelas-diikuti
+          - img [ref=e23]
+          - generic [ref=e25]: Kelas Saya
+        - link "Notifikasi" [ref=e26] [cursor=pointer]:
+          - /url: /notifications
+          - img [ref=e28]
+          - generic [ref=e31]: Notifikasi
+      - generic [ref=e33]:
+        - generic [ref=e34]: MD
+        - generic [ref=e35]:
+          - paragraph [ref=e36]: Mahasiswa Demo
+          - paragraph [ref=e37]: Mahasiswa
+        - button "Keluar" [ref=e39]:
+          - img [ref=e40]
+    - generic [ref=e43]:
+      - banner [ref=e44]:
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - paragraph [ref=e47]: Ruang Mahasiswa
+            - heading "Dashboard" [level=1] [ref=e48]
+          - generic "Mahasiswa Demo - Mahasiswa" [ref=e50]:
+            - generic [ref=e51]: MD
+            - generic [ref=e52]:
+              - generic [ref=e53]: Mahasiswa Demo
+              - generic [ref=e54]: Mahasiswa
+      - main [ref=e55]:
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - paragraph [ref=e58]: Selamat datang kembali
+            - heading "Belajar terarah, satu langkah setiap hari." [level=2] [ref=e59]
+            - paragraph [ref=e60]: Pantau progres seluruh kelas dan lanjutkan aktivitas belajar Anda.
+          - region "Ringkasan semua kelas" [ref=e61]:
+            - generic [ref=e63]:
+              - heading "Ringkasan semua kelas" [level=2] [ref=e64]
+              - paragraph [ref=e65]: Akumulasi aktivitas dari kelas aktif yang sedang Anda ikuti.
+            - generic [ref=e66]:
+              - article [ref=e67]:
+                - generic [ref=e68]:
+                  - paragraph [ref=e69]: Progres kelas
+                  - img [ref=e71]
+                - paragraph [ref=e74]: Belum aktif
+              - article [ref=e75]:
+                - generic [ref=e76]:
+                  - paragraph [ref=e77]: Rata-rata nilai akhir
+                  - img [ref=e79]
+                - paragraph [ref=e81]: Belum ada
+              - article [ref=e82]:
+                - generic [ref=e83]:
+                  - paragraph [ref=e84]: Badge
+                  - img [ref=e86]
+                - paragraph [ref=e89]: Belum ada
+              - article [ref=e90]:
+                - generic [ref=e91]:
+                  - paragraph [ref=e92]: Poin
+                  - img [ref=e94]
+                - paragraph [ref=e96]: Belum ada
+              - article [ref=e97]:
+                - generic [ref=e98]:
+                  - paragraph [ref=e99]: Modul aktif
+                  - img [ref=e101]
+                - paragraph [ref=e105]: "2"
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - generic [ref=e109]:
+                  - paragraph [ref=e110]: Lanjutkan belajar
+                  - generic [ref=e111]: 0%
+                - heading "Pemrograman Web Dasar" [level=2] [ref=e112]
+                - paragraph [ref=e113]: "Kelas demo untuk alur LMS: materi, modul, tugas, dan kuis bertahap."
+                - link "Buka kelas" [ref=e115] [cursor=pointer]:
+                  - /url: /mahasiswa/classes/pemrograman-web-dasar-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1
+                  - text: Buka kelas
+                  - img [ref=e116]
+              - generic [ref=e118]:
+                - generic [ref=e119]:
+                  - generic [ref=e120]:
+                    - paragraph [ref=e121]: Ruang belajar
+                    - heading "Kelas diikuti" [level=2] [ref=e122]
+                  - generic [ref=e123]: 1 kelas
+                - article [ref=e125]:
+                  - generic [ref=e126]:
+                    - generic [ref=e127]:
+                      - generic [ref=e128]:
+                        - heading "Pemrograman Web Dasar" [level=3] [ref=e129]
+                        - generic [ref=e130]: 2 modul
+                      - paragraph [ref=e131]: "Kelas demo untuk alur LMS: materi, modul, tugas, dan kuis bertahap."
+                      - generic [ref=e133]:
+                        - generic [ref=e134]: 0/2 aktivitas selesai
+                        - generic [ref=e135]: 0%
+                    - link "Buka" [ref=e137] [cursor=pointer]:
+                      - /url: /mahasiswa/classes/pemrograman-web-dasar-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1
+                      - text: Buka
+                      - img [ref=e138]
+            - complementary [ref=e140]:
+              - generic [ref=e141]:
+                - generic [ref=e142]:
+                  - img [ref=e144]
+                  - generic [ref=e146]:
+                    - heading "Modul aktif" [level=2] [ref=e147]
+                    - paragraph [ref=e148]: 2 modul dapat dipelajari
+                - generic [ref=e149]:
+                  - article [ref=e150]:
+                    - paragraph [ref=e151]: Pengenalan HTML dan CSS
+                    - paragraph [ref=e152]: Pemrograman Web Dasar
+                    - link "Buka kelas" [ref=e153] [cursor=pointer]:
+                      - /url: /mahasiswa/classes/pemrograman-web-dasar-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1
+                      - text: Buka kelas
+                      - img [ref=e154]
+                  - article [ref=e156]:
+                    - paragraph [ref=e157]: Interaktivitas dengan JavaScript
+                    - paragraph [ref=e158]: Pemrograman Web Dasar
+                    - link "Buka kelas" [ref=e159] [cursor=pointer]:
+                      - /url: /mahasiswa/classes/pemrograman-web-dasar-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1
+                      - text: Buka kelas
+                      - img [ref=e160]
+              - generic [ref=e162]:
+                - generic [ref=e163]:
+                  - img [ref=e165]
+                  - generic [ref=e168]:
+                    - heading "Notifikasi terbaru" [level=2] [ref=e169]
+                    - paragraph [ref=e170]: Update aktivitas belajar
+                  - link "Semua" [ref=e171] [cursor=pointer]:
+                    - /url: /notifications
+                - generic [ref=e172]:
+                  - article [ref=e173]:
+                    - generic [ref=e174]:
+                      - img [ref=e175]
+                      - generic [ref=e178]:
+                        - paragraph [ref=e179]: Nilai kuis tersedia
+                        - paragraph [ref=e180]: "Nilai kuis \"Kuis - Pengenalan dan Komponen Sistem Basis Data\" sudah keluar: 61."
+                  - article [ref=e181]:
+                    - generic [ref=e182]:
+                      - img [ref=e183]
+                      - generic [ref=e186]:
+                        - paragraph [ref=e187]: Retake dibuka
+                        - paragraph [ref=e188]: Kesempatan ulang untuk kuis "Kuis - Pengenalan dan Komponen Sistem Basis Data" sudah dibuka oleh dosen.
+  - alert [ref=e189]
