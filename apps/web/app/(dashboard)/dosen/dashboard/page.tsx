@@ -22,6 +22,7 @@ import {
   getDosenClassPath,
   getDosenModuleAssignmentsPath,
 } from "@/features/classes/urls";
+import { formatAppDateTime } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 const statusLabels = {
@@ -39,18 +40,6 @@ const statusStyles = {
 type DosenDashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function formatDateTime(value: Date | string) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 export default async function DosenDashboardPage({ searchParams }: DosenDashboardPageProps) {
   const profile = await requireRole(["dosen"]);
@@ -202,7 +191,7 @@ export default async function DosenDashboardPage({ searchParams }: DosenDashboar
                           </p>
                           <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-slate-400">
                             <Clock3 className="size-3" />
-                            {formatDateTime(review.submittedAt)}
+                            {formatAppDateTime(review.submittedAt)}
                           </p>
                         </div>
                       </div>

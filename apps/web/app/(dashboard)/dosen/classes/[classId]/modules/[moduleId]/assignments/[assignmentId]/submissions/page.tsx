@@ -32,6 +32,7 @@ import {
   rejectPermanentPlagiarismAction,
   rerunPlagiarismCheckAction,
 } from "@/features/plagiarism/actions";
+import { formatAppDateTime } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 type DosenAssignmentSubmissionsPageProps = {
@@ -210,7 +211,7 @@ function SubmissionCard({
             <Download className="size-4 shrink-0" />
           </a>
           <p className="mt-2 text-xs text-sky-700">
-            {submissionStatusLabels[submission.status]} - {formatDateTime(submission.submittedAt)}
+            {submissionStatusLabels[submission.status]} - {formatAppDateTime(submission.submittedAt)}
           </p>
           {submission.note ? (
             <p className="mt-2 text-sm leading-6 text-sky-900">Catatan: {submission.note}</p>
@@ -422,21 +423,6 @@ function getPlagiarismTone(status: string) {
   }
 
   return "border-slate-200 bg-slate-50 text-slate-800";
-}
-
-type DateLike = Date | string | null;
-
-function formatDateTime(value: DateLike) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function getSingleParam(value: string | string[] | undefined) {

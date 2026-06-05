@@ -20,6 +20,7 @@ import {
   getDosenClassReportsPath,
 } from "@/features/classes/urls";
 import { generateClassExportAction } from "@/features/exports/actions";
+import { formatAppDateTime } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 type DosenClassReportsPageProps = {
@@ -28,24 +29,6 @@ type DosenClassReportsPageProps = {
   }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-type DateLike = Date | string | null;
-
-function formatDateTime(value: DateLike) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 export default async function DosenClassReportsPage({
   params,
@@ -168,7 +151,7 @@ export default async function DosenClassReportsPage({
                           {exportItem.fileName ?? `Export ${exportItem.format}`}
                         </p>
                         <p className="mt-1 text-xs font-semibold capitalize text-slate-500">
-                          {exportItem.status} · {formatDateTime(exportItem.createdAt)}
+                          {exportItem.status} · {formatAppDateTime(exportItem.createdAt)}
                         </p>
                       </div>
                       {exportItem.status === "completed" ? (

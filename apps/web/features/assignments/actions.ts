@@ -38,6 +38,7 @@ import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "@/lib/validators";
+import { parseAppDateTimeInput } from "@/lib/app-time";
 
 const textField = z
   .string()
@@ -49,17 +50,6 @@ const reviewStatusSchema = z.enum(["accepted", "rejected"]);
 type PlagiarismCheckResult = Awaited<
   ReturnType<(typeof import("@/features/plagiarism/service"))["runPlagiarismCheck"]>
 >;
-
-function parseOptionalDate(value: FormDataEntryValue | null) {
-  const raw = String(value ?? "").trim();
-
-  if (!raw) {
-    return null;
-  }
-
-  const date = new Date(raw);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 async function notifyUsers(
   rows: Array<{
@@ -287,7 +277,7 @@ export async function createAssignmentAction(formData: FormData) {
     redirect("/dosen/dashboard?error=invalid_assignment");
   }
 
-  const dueAt = parseOptionalDate(formData.get("dueAt"));
+  const dueAt = parseAppDateTimeInput(formData.get("dueAt"));
   const stepItem = await requireOwnedStep(parsed.data.stepId, profile.id);
   let attachmentData:
     | {
@@ -413,7 +403,7 @@ export async function updateAssignmentAction(formData: FormData) {
     redirect("/dosen/dashboard?error=invalid_assignment");
   }
 
-  const dueAt = parseOptionalDate(formData.get("dueAt"));
+  const dueAt = parseAppDateTimeInput(formData.get("dueAt"));
   const assignment = await requireOwnedAssignment(parsed.data.assignmentId, profile.id);
   const now = new Date();
   const removeAttachment = formData.get("removeAttachment") === "on";

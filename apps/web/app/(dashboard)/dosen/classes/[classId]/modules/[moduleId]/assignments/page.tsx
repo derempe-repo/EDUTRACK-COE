@@ -33,6 +33,7 @@ import {
   getDosenModulePath,
 } from "@/features/classes/urls";
 import { LMS_ALLOWED_FILE_DESCRIPTION, LMS_FILE_ACCEPT } from "@/features/files/lms-file-types";
+import { formatAppDateTime, formatAppDateTimeInput } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 type DosenModuleAssignmentsPageProps = {
@@ -42,42 +43,6 @@ type DosenModuleAssignmentsPageProps = {
   }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-type DateLike = Date | string | null;
-
-function toDate(value: DateLike) {
-  if (!value) {
-    return null;
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function formatDateTime(value: DateLike) {
-  const date = toDate(value);
-
-  if (!date) {
-    return "Tanpa tenggat";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
-
-function formatDateTimeInput(value: DateLike) {
-  const date = toDate(value);
-
-  if (!date) {
-    return "";
-  }
-
-  const offset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - offset * 60 * 1000);
-  return local.toISOString().slice(0, 16);
-}
 
 export default async function DosenModuleAssignmentsPage({
   params,
@@ -210,7 +175,7 @@ export default async function DosenModuleAssignmentsPage({
                                 {assignment.description ?? "Belum ada deskripsi tugas."}
                               </p>
                               <p className="mt-2 text-xs font-medium text-neutral-500">
-                                Tenggat: {formatDateTime(assignment.dueAt)}
+                                Tenggat: {formatAppDateTime(assignment.dueAt, { fallback: "Tanpa tenggat" })}
                               </p>
                               {assignment.attachmentStoragePath ? (
                                 <a
@@ -245,7 +210,7 @@ export default async function DosenModuleAssignmentsPage({
                                 <input name="assignmentId" type="hidden" value={assignment.id} />
                                 <Field defaultValue={assignment.title} label="Nama tugas" name="title" required />
                                 <Field
-                                  defaultValue={formatDateTimeInput(assignment.dueAt)}
+                                  defaultValue={formatAppDateTimeInput(assignment.dueAt)}
                                   label="Tenggat"
                                   name="dueAt"
                                   type="datetime-local"

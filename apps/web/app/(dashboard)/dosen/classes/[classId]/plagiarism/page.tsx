@@ -20,6 +20,7 @@ import {
   rerunPlagiarismCheckAction,
 } from "@/features/plagiarism/actions";
 import { getDosenClassPlagiarismReport } from "@/features/plagiarism/data";
+import { formatAppDateTime } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 type DosenClassPlagiarismPageProps = {
@@ -259,5 +260,5 @@ function OverrideForm({ action, buttonLabel, submissionId, tone }: { action: (fo
 }
 
 function formatDate(value: Date | null) {
-  return value ? new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(value) : "-";
+  return formatAppDateTime(value);
 }

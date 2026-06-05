@@ -15,6 +15,7 @@ import {
   getDosenQuizAttemptsPath,
 } from "@/features/classes/urls";
 import { resetQuizAttemptAction } from "@/features/quizzes/actions";
+import { formatAppDateTime } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 type DosenQuizAttemptsPageProps = {
@@ -154,8 +155,8 @@ function AttemptCard({
             {attempt.studentEmail}
           </p>
           <p className="mt-2 text-xs text-neutral-500">
-            Mulai {formatDateTime(attempt.startedAt)}
-            {attempt.submittedAt ? ` - Submit ${formatDateTime(attempt.submittedAt)}` : ""}
+            Mulai {formatAppDateTime(attempt.startedAt)}
+            {attempt.submittedAt ? ` - Submit ${formatAppDateTime(attempt.submittedAt)}` : ""}
             {attempt.warningCount > 0 ? ` - Warning ${attempt.warningCount}/3` : ""}
           </p>
         </div>
@@ -189,7 +190,7 @@ function AttemptCard({
             {attempt.events.slice(0, 8).map((event) => (
               <p className="text-xs leading-5 text-amber-900" key={event.id}>
                 <span className="font-semibold">{event.eventType}</span> -{" "}
-                {formatDateTime(event.createdAt)}
+                {formatAppDateTime(event.createdAt)}
                 {event.detail ? ` - ${event.detail}` : ""}
               </p>
             ))}
@@ -198,21 +199,6 @@ function AttemptCard({
       ) : null}
     </article>
   );
-}
-
-type DateLike = Date | string | null;
-
-function formatDateTime(value: DateLike) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function getSingleParam(value: string | string[] | undefined) {

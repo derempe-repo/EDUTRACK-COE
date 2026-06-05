@@ -2,20 +2,13 @@ import { Award, CheckCircle2, ShieldAlert, ShieldCheck, XCircle } from "lucide-r
 import Link from "next/link";
 
 import { verifyCertificateToken } from "@/features/certificates/verification";
+import { formatAppDate } from "@/lib/app-time";
 
 type VerifyCertificatePageProps = {
   params: Promise<{
     token: string;
   }>;
 };
-
-function formatDate(value: Date | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(value);
-}
 
 export default async function VerifyCertificatePage({ params }: VerifyCertificatePageProps) {
   const { token } = await params;
@@ -67,7 +60,7 @@ export default async function VerifyCertificatePage({ params }: VerifyCertificat
               <CertificateDetail
                 certificateNumber={certificate.certificateNumber ?? "-"}
                 classTitle={certificate.classTitle}
-                issuedAt={formatDate(certificate.issuedAt)}
+                issuedAt={formatAppDate(certificate.issuedAt, { dateStyle: "long" })}
                 studentName={certificate.studentName}
               />
             </>
@@ -82,7 +75,7 @@ export default async function VerifyCertificatePage({ params }: VerifyCertificat
               <CertificateDetail
                 certificateNumber={certificate.certificateNumber ?? "-"}
                 classTitle={certificate.classTitle}
-                issuedAt={formatDate(certificate.issuedAt)}
+                issuedAt={formatAppDate(certificate.issuedAt, { dateStyle: "long" })}
                 studentName={certificate.studentName}
               />
             </>

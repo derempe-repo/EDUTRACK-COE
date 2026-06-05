@@ -22,6 +22,7 @@ import {
   markNotificationReadAction,
 } from "@/features/notifications/actions";
 import { getNotificationCenterData } from "@/features/notifications/data";
+import { formatAppDateTime } from "@/lib/app-time";
 import { getDashboardPathForRole, requireActiveProfile } from "@/lib/auth";
 
 type NotificationsPageProps = {
@@ -62,17 +63,6 @@ const notificationPresentations = {
     icon: "bg-emerald-50 text-emerald-700",
   },
 } as const;
-
-function formatDateTime(value: Date | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(value);
-}
 
 function getSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -297,7 +287,7 @@ function NotificationRow({ notification }: { notification: NotificationItem }) {
           </div>
           <p className="mt-2 text-sm leading-6 text-slate-600">{notification.body}</p>
           <p className="mt-3 text-xs font-medium text-slate-400">
-            {formatDateTime(notification.createdAt)}
+            {formatAppDateTime(notification.createdAt)}
           </p>
         </div>
 

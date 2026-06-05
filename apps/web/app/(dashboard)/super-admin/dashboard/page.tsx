@@ -2,6 +2,7 @@ import { Activity, BookOpen, ShieldCheck, Users } from "lucide-react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { getCachedSuperAdminDashboardData } from "@/features/classes/cached-data";
+import { formatAppDateTime } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 export default async function SuperAdminDashboardPage() {
@@ -46,10 +47,7 @@ export default async function SuperAdminDashboardPage() {
                     <p className="text-xs text-neutral-500">{log.actorRole ?? "system"}</p>
                   </div>
                   <time className="text-xs text-neutral-500">
-                    {new Intl.DateTimeFormat("id-ID", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(log.createdAt)}
+                    {formatAppDateTime(log.createdAt)}
                   </time>
                 </div>
               ))}

@@ -1,5 +1,7 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
+import { formatAppDate } from "@/lib/app-time";
+
 type CertificateDocumentProps = {
   certificateNumber: string;
   classTitle: string;
@@ -203,7 +205,7 @@ export function CertificateDocument({
   studentName,
   verificationUrl,
 }: CertificateDocumentProps) {
-  const issuedAtLabel = new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(issuedAt);
+  const issuedAtLabel = formatAppDate(issuedAt, { dateStyle: "long" });
 
   return (
     <Document>

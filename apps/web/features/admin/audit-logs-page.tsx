@@ -5,6 +5,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { getAuditLogData, type AdminSearchParams } from "@/features/admin/data";
 import { getAdminBasePath } from "@/features/admin/urls";
+import { formatAppDateTime } from "@/lib/app-time";
 import type { AppProfile } from "@/lib/auth";
 
 export async function AdminAuditLogsPage({
@@ -123,7 +124,7 @@ export async function AdminAuditLogsPage({
 }
 
 function formatDate(value: Date) {
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(value);
+  return formatAppDateTime(value);
 }
 
 function formatRole(value: string | null) {

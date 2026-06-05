@@ -9,6 +9,7 @@ import {
   allowPlagiarismResubmitAction,
   rejectPermanentPlagiarismAction,
 } from "@/features/plagiarism/actions";
+import { formatAppDateTime } from "@/lib/app-time";
 import type { AppProfile } from "@/lib/auth";
 
 export async function AdminMonitoringPage({ profile }: { profile: AppProfile }) {
@@ -154,7 +155,7 @@ function Breakdown({ title, values }: { title: string; values: Array<[string, nu
 }
 
 function formatDate(value: Date) {
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(value);
+  return formatAppDateTime(value);
 }
 
 function AdminOverrideForm({ action, label, submissionId, tone }: { action: (formData: FormData) => void | Promise<void>; label: string; submissionId: string; tone: "amber" | "red" }) {

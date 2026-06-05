@@ -10,6 +10,7 @@ import { getAdminUsersData, type AdminSearchParams } from "@/features/admin/data
 import { getAdminFeedbackNotice } from "@/features/admin/feedback";
 import { canManageProfile, getAssignableRoles } from "@/features/admin/permissions";
 import { getAdminBasePath } from "@/features/admin/urls";
+import { formatAppDateTime } from "@/lib/app-time";
 import type { AppProfile, AppUserRole } from "@/lib/auth";
 
 export async function AdminUsersPage({
@@ -183,7 +184,5 @@ function formatRole(role: AppUserRole) {
 }
 
 function formatDate(value: Date | null) {
-  return value
-    ? new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(value)
-    : "-";
+  return formatAppDateTime(value);
 }

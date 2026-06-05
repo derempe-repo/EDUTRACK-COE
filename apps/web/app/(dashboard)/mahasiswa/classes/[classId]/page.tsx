@@ -35,6 +35,7 @@ import { getFeedbackNotice } from "@/features/classes/feedback";
 import { extractIdFromSlugParam, getMahasiswaClassPath } from "@/features/classes/urls";
 import { LMS_ALLOWED_FILE_DESCRIPTION, LMS_FILE_ACCEPT } from "@/features/files/lms-file-types";
 import { startQuizAction } from "@/features/quizzes/actions";
+import { formatAppDateTime, toAppDate } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 type MahasiswaClassDetailPageProps = {
@@ -89,30 +90,12 @@ const quizAttemptStatusLabels = {
 
 type DateLike = Date | string | null;
 
-function toDate(value: DateLike) {
-  if (!value) {
-    return null;
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
 function dateTimestamp(value: DateLike) {
-  return toDate(value)?.getTime() ?? null;
+  return toAppDate(value)?.getTime() ?? null;
 }
 
 function formatDateTime(value: DateLike) {
-  const date = toDate(value);
-
-  if (!date) {
-    return "Tanpa tenggat";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  return formatAppDateTime(value, { fallback: "Tanpa tenggat" });
 }
 
 function canSubmitAgain(status: keyof typeof submissionStatusLabels | null) {

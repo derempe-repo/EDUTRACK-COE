@@ -1,5 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
+import { formatAppDateTime } from "@/lib/app-time";
+
 type ClassReportDocumentProps = {
   classTitle: string;
   generatedAt: Date;
@@ -145,7 +147,7 @@ export function ClassReportDocument({
           </View>
           <Text style={styles.title}>Laporan Kelas - {classTitle}</Text>
           <Text style={styles.subtitle}>
-            Dibuat pada {new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(generatedAt)}
+            Dibuat pada {formatAppDateTime(generatedAt)}
             {" - "}
             Bobot nilai: Tugas {gradeWeights.assignmentWeight}% - Kuis {gradeWeights.quizWeight}% - Final Exam {gradeWeights.finalExamWeight}%
           </Text>

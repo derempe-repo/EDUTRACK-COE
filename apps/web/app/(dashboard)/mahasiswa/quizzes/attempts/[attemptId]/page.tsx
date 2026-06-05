@@ -10,6 +10,7 @@ import { CountdownTimer } from "@/features/quizzes/countdown-timer";
 import { getQuizAttemptDetail } from "@/features/quizzes/data";
 import { ExamModeGuard } from "@/features/quizzes/exam-mode-guard";
 import { QuizAttemptForm } from "@/features/quizzes/quiz-attempt-form";
+import { formatAppDateTime } from "@/lib/app-time";
 import { requireRole } from "@/lib/auth";
 
 type QuizAttemptPageProps = {
@@ -25,17 +26,6 @@ const attemptStatusLabels = {
   started: "Sedang dikerjakan",
   submitted: "Selesai",
 } as const;
-
-function formatDateTime(value: Date | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(value);
-}
 
 export default async function QuizAttemptPage({ params, searchParams }: QuizAttemptPageProps) {
   const profile = await requireRole(["mahasiswa"]);
@@ -107,8 +97,8 @@ export default async function QuizAttemptPage({ params, searchParams }: QuizAtte
             </p>
             <div className="mt-2 text-xs text-sky-100/70 xl:hidden">
               {showResult
-                ? `Dikumpulkan ${formatDateTime(data.attempt.submittedAt)}`
-                : `Dimulai ${formatDateTime(data.attempt.startedAt)}`}
+                ? `Dikumpulkan ${formatAppDateTime(data.attempt.submittedAt)}`
+                : `Dimulai ${formatAppDateTime(data.attempt.startedAt)}`}
             </div>
           </div>
           <div className="grid min-w-0 grid-cols-2 gap-2 xl:grid-cols-4">
