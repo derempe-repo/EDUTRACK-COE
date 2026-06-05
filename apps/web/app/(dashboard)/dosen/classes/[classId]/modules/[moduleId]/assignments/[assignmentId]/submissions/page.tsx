@@ -99,7 +99,7 @@ export default async function DosenAssignmentSubmissionsPage({
 
   return (
     <DashboardShell profile={profile} title={`Submission - ${data.assignmentItem.title}`}>
-      <div className="space-y-8">
+      <div className="min-w-0 space-y-8">
         <div className="space-y-3">
           <Breadcrumbs
             items={[
@@ -133,24 +133,26 @@ export default async function DosenAssignmentSubmissionsPage({
 
         <section className="rounded-lg border border-slate-200 bg-[#123044] p-5 text-white shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wide text-[#e7b75b]">
                 Step {data.stepItem.sortOrder} - {data.stepItem.title}
               </p>
-              <h1 className="mt-2 text-2xl font-bold leading-tight">{data.assignmentItem.title}</h1>
+              <h1 className="mt-2 break-words text-2xl font-bold leading-tight [overflow-wrap:anywhere]">
+                {data.assignmentItem.title}
+              </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sky-100/80">
                 Kelola file submission, nilai, feedback, resubmit, dan override similarity untuk
                 tugas ini.
               </p>
             </div>
-            <div className="rounded-lg border border-white/15 bg-white/10 p-3 text-center">
+            <div className="w-fit rounded-lg border border-white/15 bg-white/10 p-3 text-center md:w-auto">
               <p className="text-2xl font-bold text-white">{data.pagination.totalItems}</p>
               <p className="text-xs font-semibold text-sky-100/75">Submission</p>
             </div>
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-lg border border-sky-200 bg-white shadow-sm">
+        <section className="min-w-0 overflow-hidden rounded-lg border border-sky-200 bg-white shadow-sm">
           <div className="flex flex-col gap-2 border-b border-sky-100 bg-sky-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="inline-flex items-center gap-2 text-sm font-semibold text-sky-950">
               <Inbox className="size-4 text-sky-700" />
@@ -193,31 +195,35 @@ function SubmissionCard({
   submission: NonNullable<Awaited<ReturnType<typeof getCachedDosenAssignmentSubmissionsDetail>>>["submissions"][number];
 }) {
   return (
-    <article className="p-4">
+    <article className="min-w-0 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="font-semibold text-sky-950">{submission.studentName}</p>
+          <p className="break-words font-semibold text-sky-950 [overflow-wrap:anywhere]">{submission.studentName}</p>
           <p className="break-words text-xs text-sky-700 [overflow-wrap:anywhere]">
             {submission.studentEmail}
           </p>
           <a
-            className="mt-2 inline-flex max-w-full items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-900 transition hover:border-sky-300 hover:bg-sky-100"
+            className="mt-2 flex w-full min-w-0 items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-900 transition hover:border-sky-300 hover:bg-sky-100 sm:inline-flex sm:w-fit sm:max-w-full"
             href={`/api/submissions/${submission.id}/signed-url`}
             rel="noreferrer"
             target="_blank"
           >
             <FileText className="size-4 shrink-0" />
-            <span className="break-words [overflow-wrap:anywhere]">{submission.fileName}</span>
+            <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{submission.fileName}</span>
             <Download className="size-4 shrink-0" />
           </a>
-          <p className="mt-2 text-xs text-sky-700">
+          <p className="mt-2 break-words text-xs text-sky-700 [overflow-wrap:anywhere]">
             {submissionStatusLabels[submission.status]} - {formatAppDateTime(submission.submittedAt)}
           </p>
           {submission.note ? (
-            <p className="mt-2 text-sm leading-6 text-sky-900">Catatan: {submission.note}</p>
+            <p className="mt-2 break-words text-sm leading-6 text-sky-900 [overflow-wrap:anywhere]">
+              Catatan: {submission.note}
+            </p>
           ) : null}
           {submission.feedback ? (
-            <p className="mt-2 text-sm leading-6 text-sky-900">Feedback: {submission.feedback}</p>
+            <p className="mt-2 break-words text-sm leading-6 text-sky-900 [overflow-wrap:anywhere]">
+              Feedback: {submission.feedback}
+            </p>
           ) : null}
         </div>
         {submission.score !== null ? (
@@ -232,12 +238,12 @@ function SubmissionCard({
           className={`mt-3 rounded-md border px-3 py-2 text-sm ${getPlagiarismTone(submission.plagiarismStatus)}`}
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+            <div className="min-w-0">
               <p className="inline-flex items-center gap-2 font-semibold">
                 <AlertTriangle className="size-4 shrink-0" />
                 Similarity {submission.similarityScore ?? 0}%
               </p>
-              <p className="mt-1 text-xs leading-5 opacity-80">
+              <p className="mt-1 break-words text-xs leading-5 opacity-80 [overflow-wrap:anywhere]">
                 Threshold {submission.thresholdPercent ?? 70}% - metode{" "}
                 {getDetectionMethodLabel(submission.detectionMethod)} - ekstraksi{" "}
                 {submission.extractionStatus ?? "pending"}
@@ -246,7 +252,7 @@ function SubmissionCard({
             <form action={rerunPlagiarismCheckAction}>
               <input name="submissionId" type="hidden" value={submission.id} />
               <SubmitButton
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-current/20 bg-white/70 px-3 py-2 text-xs font-semibold transition hover:bg-white"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-current/20 bg-white/70 px-3 py-2 text-xs font-semibold transition hover:bg-white sm:w-auto"
                 pendingLabel="Mengecek..."
               >
                 <RotateCcw className="size-4" />
@@ -266,12 +272,12 @@ function SubmissionCard({
           <div className="grid gap-3 lg:grid-cols-2">
             <form
               action={allowPlagiarismResubmitAction}
-              className="rounded-md border border-amber-200 bg-amber-50 p-3"
+              className="min-w-0 rounded-md border border-amber-200 bg-amber-50 p-3"
             >
               <input name="submissionId" type="hidden" value={submission.id} />
               <TextArea label="Alasan perbaikan" name="reason" />
               <SubmitButton
-                className="mt-3 inline-flex items-center justify-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 sm:w-auto"
                 pendingLabel="Membuka ulang..."
               >
                 <RotateCcw className="size-4" />
@@ -280,12 +286,12 @@ function SubmissionCard({
             </form>
             <form
               action={rejectPermanentPlagiarismAction}
-              className="rounded-md border border-red-200 bg-red-50 p-3"
+              className="min-w-0 rounded-md border border-red-200 bg-red-50 p-3"
             >
               <input name="submissionId" type="hidden" value={submission.id} />
               <TextArea label="Alasan penolakan permanen" name="reason" />
               <ConfirmSubmitButton
-                className="mt-3 inline-flex items-center justify-center gap-2 rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-800"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-800 sm:w-auto"
                 message="Tolak permanen submission ini dan tetapkan nilai 0?"
               >
                 <AlertTriangle className="size-4" />
@@ -297,9 +303,9 @@ function SubmissionCard({
       ) : (
         <details className="group mt-4 rounded-md border border-sky-200 bg-sky-50">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-semibold text-sky-900 [&::-webkit-details-marker]:hidden">
-            <span className="inline-flex items-center gap-2">
+            <span className="inline-flex min-w-0 items-center gap-2">
               <CheckCircle2 className="size-4 text-sky-700" />
-              Penilaian dan feedback
+              <span className="min-w-0 break-words [overflow-wrap:anywhere]">Penilaian dan feedback</span>
             </span>
             <ChevronDown className="size-4 text-sky-700 transition group-open:rotate-180" />
           </summary>
@@ -343,7 +349,7 @@ function SubmissionCard({
         <form action={allowResubmitAction} className="mt-3">
           <input name="submissionId" type="hidden" value={submission.id} />
           <SubmitButton
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 sm:w-auto"
             pendingLabel="Membuka resubmit..."
           >
             <RotateCcw className="size-4" />
@@ -367,10 +373,10 @@ function Field({
   type?: string;
 }) {
   return (
-    <label className="block space-y-2">
+    <label className="block min-w-0 space-y-2">
       <span className="text-sm font-medium text-neutral-700">{label}</span>
       <input
-        className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+        className="w-full min-w-0 rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
         defaultValue={defaultValue}
         min={type === "number" ? 0 : undefined}
         name={name}
@@ -390,10 +396,10 @@ function TextArea({
   name: string;
 }) {
   return (
-    <label className="block space-y-2">
+    <label className="block min-w-0 space-y-2">
       <span className="text-sm font-medium text-neutral-700">{label}</span>
       <textarea
-        className="min-h-28 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+        className="min-h-28 w-full min-w-0 rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
         defaultValue={defaultValue}
         name={name}
       />

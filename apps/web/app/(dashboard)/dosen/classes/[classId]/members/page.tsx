@@ -96,8 +96,8 @@ export default async function DosenClassMembersPage({
         />
         <DosenClassNavigation classItem={data.classItem} />
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-4">
+        <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="min-w-0 space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Enrollment</p>
@@ -127,9 +127,72 @@ export default async function DosenClassMembersPage({
               </SubmitButton>
             </form>
 
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               {students.length > 0 ? (
-                <div className="overflow-x-auto">
+                <>
+                <div className="divide-y divide-slate-100 md:hidden">
+                  {students.map((member) => {
+                    const reportItem = reportByEmail.get(member.profileEmail);
+
+                    return (
+                      <article className="space-y-3 p-4" key={member.id}>
+                        <div className="min-w-0">
+                          <p className="break-words font-semibold text-slate-950 [overflow-wrap:anywhere]">
+                            {member.profileName}
+                          </p>
+                          <p className="mt-1 break-words text-xs text-slate-500 [overflow-wrap:anywhere]">
+                            {member.profileEmail}
+                          </p>
+                        </div>
+                        <div className="grid gap-3 rounded-md bg-slate-50 p-3 text-sm">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Progres</p>
+                            <div className="mt-2 flex min-w-0 items-center gap-2">
+                              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className="h-full rounded-full bg-teal-600"
+                                  style={{ width: `${reportItem?.progressPercent ?? 0}%` }}
+                                />
+                              </div>
+                              <span className="shrink-0 text-xs font-semibold text-slate-600">
+                                {reportItem?.progressPercent ?? 0}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Nilai</p>
+                              <p className="mt-1 font-semibold text-slate-700">
+                                {reportItem?.finalScore ?? 0}
+                              </p>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                Sertifikat
+                              </p>
+                              <p className="mt-1 break-words text-xs font-semibold capitalize text-slate-600 [overflow-wrap:anywhere]">
+                                {reportItem?.certificateStatus ?? "belum tersedia"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <form action={removeClassMemberAction}>
+                          <input name="classId" type="hidden" value={data.classItem.id} />
+                          <input name="memberId" type="hidden" value={member.id} />
+                          <ConfirmSubmitButton
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                            message={`Keluarkan ${member.profileName} dari kelas ini?`}
+                            title="Hapus anggota"
+                          >
+                            <UserMinus className="size-4" />
+                            Keluarkan
+                          </ConfirmSubmitButton>
+                        </form>
+                      </article>
+                    );
+                  })}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
                   <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
                       <tr>
@@ -190,6 +253,7 @@ export default async function DosenClassMembersPage({
                     </tbody>
                   </table>
                 </div>
+                </>
               ) : (
                 <div className="p-8 text-sm leading-6 text-slate-600">
                   {query ? "Tidak ada mahasiswa yang cocok dengan pencarian." : "Belum ada mahasiswa di kelas ini."}

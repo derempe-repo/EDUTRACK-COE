@@ -90,14 +90,14 @@ export default async function DosenClassReportsPage({
         />
         <DosenClassNavigation classItem={data.classItem} />
 
-        <section className="grid gap-6 xl:grid-cols-2">
-          <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section className="grid min-w-0 gap-6 xl:grid-cols-2">
+          <section className="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 bg-slate-50 p-4 sm:p-5">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <span className="inline-flex size-10 items-center justify-center rounded-md bg-teal-100 text-teal-700">
                   <FileSpreadsheet className="size-5" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h2 className="font-semibold text-slate-950">Export laporan kelas</h2>
                   <p className="mt-0.5 text-sm text-slate-500">
                     Unduh progres, nilai akhir, dan status sertifikat mahasiswa.
@@ -114,7 +114,7 @@ export default async function DosenClassReportsPage({
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <form action={generateClassExportAction}>
+                <form action={generateClassExportAction} className="min-w-0 flex-1">
                   <input name="classId" type="hidden" value={data.classItem.id} />
                   <input name="format" type="hidden" value="excel" />
                   <SubmitButton
@@ -125,7 +125,7 @@ export default async function DosenClassReportsPage({
                     Export Excel
                   </SubmitButton>
                 </form>
-                <form action={generateClassExportAction}>
+                <form action={generateClassExportAction} className="min-w-0 flex-1">
                   <input name="classId" type="hidden" value={data.classItem.id} />
                   <input name="format" type="hidden" value="pdf" />
                   <SubmitButton
@@ -143,14 +143,14 @@ export default async function DosenClassReportsPage({
                 {data.exports.length > 0 ? (
                   data.exports.map((exportItem) => (
                     <div
-                      className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5"
+                      className="flex min-w-0 items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5"
                       key={exportItem.id}
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">
+                        <p className="break-words text-sm font-semibold text-slate-900 [overflow-wrap:anywhere]">
                           {exportItem.fileName ?? `Export ${exportItem.format}`}
                         </p>
-                        <p className="mt-1 text-xs font-semibold capitalize text-slate-500">
+                        <p className="mt-1 break-words text-xs font-semibold capitalize text-slate-500 [overflow-wrap:anywhere]">
                           {exportItem.status} · {formatAppDateTime(exportItem.createdAt)}
                         </p>
                       </div>
@@ -177,13 +177,13 @@ export default async function DosenClassReportsPage({
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <section className="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 bg-slate-50 p-4 sm:p-5">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <span className="inline-flex size-10 items-center justify-center rounded-md bg-amber-100 text-amber-700">
                   <Award className="size-5" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h2 className="font-semibold text-slate-950">Sertifikat mahasiswa</h2>
                   <p className="mt-0.5 text-sm text-slate-500">
                     Terbitkan atau unduh sertifikat kelulusan digital.
@@ -198,23 +198,27 @@ export default async function DosenClassReportsPage({
 
                   return (
                     <div
-                      className="flex flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex min-w-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
                       key={member.id}
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-950">{member.profileName}</p>
-                        <p className="truncate text-xs text-slate-500">{member.profileEmail}</p>
-                        <p className="mt-1 text-xs font-semibold capitalize text-amber-700">
+                        <p className="break-words text-sm font-semibold text-slate-950 [overflow-wrap:anywhere]">
+                          {member.profileName}
+                        </p>
+                        <p className="break-words text-xs text-slate-500 [overflow-wrap:anywhere]">
+                          {member.profileEmail}
+                        </p>
+                        <p className="mt-1 break-words text-xs font-semibold capitalize text-amber-700 [overflow-wrap:anywhere]">
                           {certificate
                             ? `${certificate.status}${certificate.certificateNumber ? ` · ${certificate.certificateNumber}` : ""}`
                             : "Belum diterbitkan"}
                         </p>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
                         {certificate?.status === "issued" ? (
                           <>
                             <a
-                              className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-50"
+                              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-50 sm:w-auto"
                               data-no-progress
                               href={`/api/certificates/${certificate.id}/download`}
                               rel="noreferrer"
@@ -223,11 +227,11 @@ export default async function DosenClassReportsPage({
                               <Download className="size-3.5" />
                               Unduh
                             </a>
-                            <form action={regenerateCertificatePdfAction}>
+                            <form action={regenerateCertificatePdfAction} className="min-w-0">
                               <input name="classId" type="hidden" value={data.classItem.id} />
                               <input name="studentId" type="hidden" value={member.profileId} />
                               <SubmitButton
-                                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
                                 pendingLabel="Membuat ulang..."
                               >
                                 Buat ulang PDF
@@ -235,11 +239,11 @@ export default async function DosenClassReportsPage({
                             </form>
                           </>
                         ) : (
-                          <form action={issueCertificateAction}>
+                          <form action={issueCertificateAction} className="min-w-0">
                             <input name="classId" type="hidden" value={data.classItem.id} />
                             <input name="studentId" type="hidden" value={member.profileId} />
                             <SubmitButton
-                              className="rounded-md bg-amber-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-800"
+                              className="w-full rounded-md bg-amber-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-800 sm:w-auto"
                               pendingLabel="Menerbitkan..."
                             >
                               Coba terbitkan
