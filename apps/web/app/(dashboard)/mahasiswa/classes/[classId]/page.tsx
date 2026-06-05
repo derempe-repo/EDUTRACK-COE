@@ -646,7 +646,7 @@ export default async function MahasiswaClassDetailPage({
 
                                 return (
                                   <article
-                                    className="rounded-lg border border-indigo-200 bg-white p-4 shadow-sm"
+                                    className="min-w-0 rounded-lg border border-indigo-200 bg-white p-4 shadow-sm"
                                     key={assignment.id}
                                   >
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -665,13 +665,13 @@ export default async function MahasiswaClassDetailPage({
                                         </p>
                                         {assignment.attachmentStoragePath ? (
                                           <a
-                                            className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
+                                            className="mt-3 flex w-full min-w-0 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 sm:inline-flex sm:w-fit sm:max-w-full"
                                             href={`/api/assignments/${assignment.id}/attachment`}
                                             rel="noreferrer"
                                             target="_blank"
                                           >
                                             <FileText className="size-4 shrink-0" />
-                                            <span className="break-words [overflow-wrap:anywhere]">
+                                            <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
                                               {assignment.attachmentFileName ?? "Lampiran tugas"}
                                             </span>
                                             <Download className="size-4 shrink-0" />
@@ -690,15 +690,15 @@ export default async function MahasiswaClassDetailPage({
                                     </div>
 
                                     {submission ? (
-                                      <div className="mt-4 rounded-md border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-950">
+                                      <div className="mt-4 min-w-0 rounded-md border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-950">
                                         <a
-                                          className="inline-flex max-w-full items-center gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 font-semibold transition hover:border-sky-300 hover:bg-sky-100"
+                                          className="flex w-full min-w-0 items-center gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 font-semibold transition hover:border-sky-300 hover:bg-sky-100 sm:inline-flex sm:w-fit sm:max-w-full"
                                           href={`/api/submissions/${submission.id}/signed-url`}
                                           rel="noreferrer"
                                           target="_blank"
                                         >
                                           <FileText className="size-4 shrink-0" />
-                                          <span className="break-words [overflow-wrap:anywhere]">
+                                          <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
                                             {submission.fileName}
                                           </span>
                                           <Download className="size-4 shrink-0" />
@@ -710,7 +710,9 @@ export default async function MahasiswaClassDetailPage({
                                           <p className="mt-2 font-semibold">Nilai: {submission.score}</p>
                                         ) : null}
                                         {submission.feedback ? (
-                                          <p className="mt-2 leading-6">Feedback: {submission.feedback}</p>
+                                          <p className="mt-2 break-words leading-6 [overflow-wrap:anywhere]">
+                                            Feedback: {submission.feedback}
+                                          </p>
                                         ) : null}
                                         {submission.plagiarismStatus === "flagged" ? (
                                           <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-3 text-red-900">
