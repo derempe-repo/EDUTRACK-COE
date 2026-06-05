@@ -3,7 +3,6 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import JSZip from "jszip";
-import { PDFParse } from "pdf-parse";
 
 const MAX_EXTRACTED_TEXT_LENGTH = 200_000;
 const MAX_ZIP_TEXT_FILES = 100;
@@ -118,18 +117,20 @@ function resolvePdfWorkerPath() {
   return null;
 }
 
-function configurePdfWorker() {
+function configurePdfWorker(pdfParser: { setWorker(workerUrl: string): void }) {
   const workerPath = resolvePdfWorkerPath();
 
   if (!workerPath) {
     throw new Error("PDF worker tidak ditemukan di node_modules aplikasi.");
   }
 
-  PDFParse.setWorker(pathToFileURL(workerPath).toString());
+  pdfParser.setWorker(pathToFileURL(workerPath).toString());
 }
 
 async function extractPdfFromBytes(bytes: Uint8Array) {
-  configurePdfWorker();
+  const { PDFParse } = await import("pdf-parse");
+
+  configurePdfWorker(PDFParse);
   const parser = new PDFParse({
     data: bytes,
     disableFontFace: true,

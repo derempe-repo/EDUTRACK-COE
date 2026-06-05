@@ -33,7 +33,6 @@ import {
 } from "@/features/classes/urls";
 import { invalidateClassDataCache } from "@/features/classes/cache-tags";
 import { hasPriorFlaggedSubmission } from "@/features/plagiarism/access";
-import { runPlagiarismCheck } from "@/features/plagiarism/service";
 import { writeAuditLog } from "@/lib/audit";
 import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -47,6 +46,9 @@ const textField = z
 
 const maxScoreField = z.coerce.number().int().min(1).max(1000);
 const reviewStatusSchema = z.enum(["accepted", "rejected"]);
+type PlagiarismCheckResult = Awaited<
+  ReturnType<(typeof import("@/features/plagiarism/service"))["runPlagiarismCheck"]>
+>;
 
 function parseOptionalDate(value: FormDataEntryValue | null) {
   const raw = String(value ?? "").trim();
@@ -701,9 +703,11 @@ export async function submitAssignmentAction(formData: FormData) {
     await supabase.storage.from(SUBMISSIONS_BUCKET).remove([existingSubmission.filePath]);
   }
 
-  let plagiarismResult: Awaited<ReturnType<typeof runPlagiarismCheck>> | null = null;
+  let plagiarismResult: PlagiarismCheckResult | null = null;
 
   try {
+    const { runPlagiarismCheck } = await import("@/features/plagiarism/service");
+
     plagiarismResult = await runPlagiarismCheck({
       assignmentId: parsed.data.assignmentId,
       assignmentTitle: assignment.assignmentTitle,
