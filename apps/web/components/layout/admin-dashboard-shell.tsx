@@ -89,6 +89,16 @@ export function AdminDashboardShell({
             </Link>
             <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
               <UserProfileBadge profile={profile} roleLabel={roleLabel} />
+              <form action={logoutAction} className="lg:hidden">
+                <SubmitButton
+                  aria-label="Keluar"
+                  className="inline-flex size-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                  pendingChildren={<Loader2 className="size-4 animate-spin" />}
+                  title="Keluar"
+                >
+                  <LogOut className="size-4" />
+                </SubmitButton>
+              </form>
             </div>
           </div>
         </header>
